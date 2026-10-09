@@ -11,12 +11,14 @@ const EnvSchema = z.object({
     .enum(["true", "false"])
     .optional()
     .transform((v) => v === "true"),
-  OPENAI_API_KEY: z
+  ANTHROPIC_API_KEY: z
     .string()
     .optional()
     .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined)),
-  OPENAI_MODEL: z.string().default("gpt-5-mini"),
-  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
+  // Fast tier: bulk complaint classification. Deep tier: root cause, team routing, Ask ServicePulse.
+  ANTHROPIC_MODEL_FAST: z.string().default("claude-haiku-5-5"),
+  ANTHROPIC_MODEL_DEEP: z.string().default("claude-opus-5-5"),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(25_000),
   ANALYSIS_PERIOD_DAYS: z.coerce.number().int().min(1).max(90).default(7),
 });
 
@@ -36,5 +38,5 @@ export function env(): Env {
 }
 
 export function aiConfigured(): boolean {
-  return Boolean(env().OPENAI_API_KEY);
+  return Boolean(env().ANTHROPIC_API_KEY);
 }

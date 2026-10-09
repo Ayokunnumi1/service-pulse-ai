@@ -29,7 +29,7 @@ export default async function SettingsPage() {
   const bank = await requireBank();
   const audit = await listAudit(bank.id, { limit: 150 });
   const ai = aiConfigured();
-  const { OPENAI_MODEL, ANALYSIS_PERIOD_DAYS, AI_TIMEOUT_MS } = env();
+  const { ANTHROPIC_MODEL_FAST, ANTHROPIC_MODEL_DEEP, ANALYSIS_PERIOD_DAYS, AI_TIMEOUT_MS } = env();
 
   return (
     <>
@@ -86,16 +86,20 @@ export default async function SettingsPage() {
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Provider</dt>
                 <dd className="flex items-center gap-2">
-                  {ai ? "OpenAI" : "Not configured"} <MethodBadge method={ai ? "AI" : "RULES"} />
+                  {ai ? "Anthropic Claude" : "Not configured"} <MethodBadge method={ai ? "AI" : "RULES"} />
                 </dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Model</dt>
-                <dd className="font-mono text-xs">{ai ? OPENAI_MODEL : "—"}</dd>
+                <dt className="text-muted-foreground">Classification model</dt>
+                <dd className="font-mono text-xs">{ai ? ANTHROPIC_MODEL_FAST : "—"}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted-foreground">Analysis &amp; assistant model</dt>
+                <dd className="font-mono text-xs">{ai ? ANTHROPIC_MODEL_DEEP : "—"}</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Timeout</dt>
-                <dd>{AI_TIMEOUT_MS / 1000}s · 2 retries</dd>
+                <dd>{AI_TIMEOUT_MS / 1000}s · 1 retry</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Output validation</dt>
@@ -104,7 +108,7 @@ export default async function SettingsPage() {
             </dl>
             {!ai && (
               <p className="bg-muted/60 text-muted-foreground mt-3 rounded-lg p-2.5 text-xs">
-                Set <code>OPENAI_API_KEY</code> to enable AI classification, root-cause analysis, team recommendation
+                Set <code>ANTHROPIC_API_KEY</code> to enable AI classification, root-cause analysis, team recommendation
                 and Ask ServicePulse. Until then a deterministic rules engine is used and labelled &ldquo;Rules&rdquo;.
               </p>
             )}

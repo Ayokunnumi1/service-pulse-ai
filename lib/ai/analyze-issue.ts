@@ -17,7 +17,7 @@ import {
 import { ROOT_CAUSE_SYSTEM_PROMPT, rootCauseUserPrompt, type IssueEvidence } from "@/prompts/root-cause-analysis";
 import { TEAM_RECOMMENDATION_SYSTEM_PROMPT, teamRecommendationUserPrompt } from "@/prompts/team-recommendation";
 import type { Bank } from "@/types";
-import { AIUnavailableError, structuredCompletion } from "./openai";
+import { AIUnavailableError, structuredCompletion } from "./claude";
 import { recommendedActionFor, rootCauseWithRules } from "./rules/root-cause";
 import { recommendTeamWithRules } from "./rules/team-matcher";
 import { validateTeamRecommendation, type DirectoryEntry, type ValidatedOwnership } from "./team-validation";
@@ -85,6 +85,7 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
       const res = await structuredCompletion({
         schema: AIRootCauseSchema,
         name: "root_cause_analysis",
+        tier: "deep",
         system: ROOT_CAUSE_SYSTEM_PROMPT,
         user: rootCauseUserPrompt(evidence),
       });
@@ -139,6 +140,7 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
         const res = await structuredCompletion({
           schema: AITeamRecommendationSchema,
           name: "team_recommendation",
+          tier: "deep",
           system: TEAM_RECOMMENDATION_SYSTEM_PROMPT,
           user: teamRecommendationUserPrompt(
             {

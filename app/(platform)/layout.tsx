@@ -27,7 +27,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           <div
             className="bg-card ring-foreground/10 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ring-1"
             title={
-              ai ? "OpenAI structured outputs enabled" : "OPENAI_API_KEY not set — deterministic rules fallback in use"
+              ai ? "Claude structured outputs enabled" : "ANTHROPIC_API_KEY not set — deterministic rules fallback in use"
             }
           >
             {ai ? (
@@ -36,7 +36,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
               <Cpu className="text-muted-foreground size-3.5" />
             )}
             <span className="text-muted-foreground">AI engine:</span>
-            <span className="font-medium">{ai ? "OpenAI connected" : "Rules fallback"}</span>
+            <span className="font-medium">{ai ? "Claude connected" : "Rules fallback"}</span>
           </div>
         </header>
         <MobileNav />

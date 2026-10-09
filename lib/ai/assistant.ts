@@ -7,7 +7,7 @@ import { aiConfigured } from "@/lib/env";
 import { AIAssistantAnswerSchema, type AssistantAnswer } from "@/lib/validation/ai";
 import { MANAGEMENT_ASSISTANT_SYSTEM_PROMPT, managementAssistantUserPrompt } from "@/prompts/management-insight";
 import type { Bank } from "@/types";
-import { AIUnavailableError, structuredCompletion } from "./openai";
+import { AIUnavailableError, structuredCompletion } from "./claude";
 
 export interface AssistantResponse extends AssistantAnswer {
   method: "AI" | "RULES";
@@ -237,6 +237,7 @@ export async function askServicePulse(bank: Bank, question: string): Promise<Ass
       const res = await structuredCompletion({
         schema: AIAssistantAnswerSchema,
         name: "management_answer",
+        tier: "deep",
         system: MANAGEMENT_ASSISTANT_SYSTEM_PROMPT,
         user: managementAssistantUserPrompt(question, snapshot),
       });

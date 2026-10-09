@@ -44,7 +44,7 @@ One Next.js 16 (App Router, TypeScript) application. No microservices, queues or
 | UI                    | Next.js server components, Tailwind CSS v4, shadcn/ui, Recharts, Lucide icons                    |
 | API                   | Next.js route handlers (`app/api/**`), every body validated with Zod                             |
 | Database              | Supabase PostgreSQL via `postgres.js` (parameterised tagged-template queries only)               |
-| AI                    | OpenAI Chat Completions with **Structured Outputs** (`zodResponseFormat`), re-validated with Zod |
+| AI                    | Anthropic Claude with **Structured Outputs** (`betaZodOutputFormat`), re-validated with Zod — Haiku for classification, Opus for analysis |
 | Deterministic engines | `lib/scoring` (trend + risk), `lib/clustering` (aggregation), `lib/ai/team-validation`           |
 
 ```
@@ -59,7 +59,7 @@ app/
   api/                      route handlers (classify, import, analyse, assign, status, notes, assistant, directory)
 components/                 dashboard / complaints / issues / teams / charts / shared / ui (shadcn)
 lib/
-  ai/                       OpenAI client, classification, root-cause + team orchestration, assistant,
+  ai/                       Claude client (fast/deep model tiers), classification, root-cause + team orchestration, assistant,
                             team-id validation, rules fallback (classifier, root-cause library, team matcher)
   db/                       bank-scoped data access (banks, interactions, issues, directory, dashboard, audit)
   clustering/aggregate.ts   pattern detection: per-issue volumes, growth, breakdowns, risk
@@ -109,9 +109,10 @@ All variables are **server-side only** (none are prefixed `NEXT_PUBLIC_`), valid
 | `DATABASE_URL`         | yes      | –              | Postgres connection string (Supabase or local)                                  |
 | `DATABASE_SSL`         | no       | `false`        | `true` for Supabase / hosted Postgres                                           |
 | `DATABASE_POOL_MAX`    | no       | 5 prod / 8 dev | Pool size. Use `1` with the local PGlite server                                 |
-| `OPENAI_API_KEY`       | no*      | –              | Enables AI. *Without it a deterministic rules engine is used (labelled "Rules") |
-| `OPENAI_MODEL`         | no       | `gpt-5-mini`   | Any OpenAI model that supports Structured Outputs                               |
-| `AI_TIMEOUT_MS`        | no       | `60000`        | Per-request AI timeout (2 automatic retries)                                    |
+| `ANTHROPIC_API_KEY`    | no*      | –              | Enables AI. *Without it a deterministic rules engine is used (labelled "Rules") |
+| `ANTHROPIC_MODEL_FAST` | no       | `claude-haiku-5-5` | Bulk complaint classification                                               |
+| `ANTHROPIC_MODEL_DEEP` | no       | `claude-opus-5-5`  | Root-cause analysis, team recommendation, Ask ServicePulse                  |
+| `AI_TIMEOUT_MS`        | no       | `25000`        | Per-request AI timeout (1 automatic retry)                                      |
 | `ANALYSIS_PERIOD_DAYS` | no       | `7`            | Length of the current vs previous comparison period                             |
 
 ## Database migrations
@@ -199,7 +200,7 @@ use Supabase (option B).
    DATABASE_SSL=true npm run db:migrate && npm run db:seed
    ```
 3. **Vercel**: import the Git repository (framework preset: Next.js). Add environment variables `DATABASE_URL`,
-   `DATABASE_SSL=true`, `OPENAI_API_KEY`, optionally `OPENAI_MODEL`. Deploy.
+   `DATABASE_SSL=true`, `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_MODEL_FAST` / `ANTHROPIC_MODEL_DEEP`. Deploy.
 4. Long AI routes declare `maxDuration = 60`; classification and analysis are chunked client-side so each request
    stays well inside serverless limits.
 
@@ -246,7 +247,7 @@ exercises the same server code paths headlessly.
   demo, not for production.
 - The current period ends at the **latest complaint timestamp** (keeps seeded data meaningful whenever it is viewed);
   a production system would use wall-clock time.
-- Without `OPENAI_API_KEY` the rules fallback is tuned to the demo taxonomy; truly novel phrasing needs the AI.
+- Without `ANTHROPIC_API_KEY` the rules fallback is tuned to the demo taxonomy; truly novel phrasing needs the AI.
 - Classification and analysis run synchronously from the browser in chunks — closing the tab pauses processing.
 - Issue grouping is by normalised issue code per bank; there is no embedding-based clustering of unseen issue types
   beyond what the model proposes.

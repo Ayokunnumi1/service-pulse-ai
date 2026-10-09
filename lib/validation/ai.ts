@@ -2,9 +2,8 @@ import { z } from "zod";
 import { CATEGORIES, CHANNELS, INTENTS, PRODUCTS, SENTIMENTS, SEVERITIES } from "@/lib/constants";
 
 /**
- * Structured-output schemas sent to the model (OpenAI strict JSON schema).
- * Strict mode requires every field to be present, so optional values are
- * modelled as `.nullable()`. Range checks that strict JSON schema cannot
+ * Structured-output schemas sent to the model (Claude structured outputs).
+ * Every field is required, so optional values are modelled as `.nullable()`. Range checks that strict JSON schema cannot
  * express are enforced afterwards by the `Validated*` schemas below.
  */
 

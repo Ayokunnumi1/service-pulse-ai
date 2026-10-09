@@ -14,7 +14,7 @@ import {
   classificationUserPrompt,
   type ClassificationPromptItem,
 } from "@/prompts/complaint-classification";
-import { AIUnavailableError, mapWithConcurrency, structuredCompletion } from "./openai";
+import { AIUnavailableError, mapWithConcurrency, structuredCompletion } from "./claude";
 import { classifyWithRules } from "./rules/classifier";
 
 const BATCH_SIZE = 20;
@@ -72,6 +72,7 @@ async function classifyBatch(
     const { data, model } = await structuredCompletion({
       schema: AIClassificationBatchSchema,
       name: "complaint_classification",
+      tier: "fast",
       system: classificationSystemPrompt(knownCodes),
       user: classificationUserPrompt(items),
     });
