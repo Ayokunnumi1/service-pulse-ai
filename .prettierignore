@@ -1,0 +1,6 @@
+.next
+node_modules
+.pglite
+.playwright-mcp
+package-lock.json
+components/ui

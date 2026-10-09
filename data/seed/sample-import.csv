@@ -1,0 +1,13 @@
+channel,message,customer_reference,branch,location,product,amount,timestamp
+MOBILE_APP,"I transferred 40k to my landlord this morning, the app says successful but he hasn't been credited",CUS-9100001,,Lagos,Mobile Banking,40000,2026-10-08T09:12:00Z
+USSD,"Sent money with the USSD code, I was debited but the receiver never got it",CUS-9100002,,Abuja,USSD Banking,15000,2026-10-08T10:40:00Z
+CONTACT_CENTER,Customer reports transfer stuck on processing for 6 hours and wants a reversal,CUS-9100003,,Port Harcourt,,72000,2026-10-08T11:05:00Z
+SOCIAL_MEDIA,"@KestrelTrustNG why do your transfers keep failing today?? Money gone, nothing delivered",CUS-9100004,,Lagos,,,2026-10-08T12:30:00Z
+MOBILE_APP,Can't log in after the latest update. It keeps asking for an OTP that never comes,CUS-9100005,,Ibadan,Mobile Banking,,2026-10-08T13:15:00Z
+EMAIL,"The app rejects my fingerprint and then locks me out, please help",CUS-9100006,,Enugu,Mobile Banking,,2026-10-08T14:02:00Z
+WHATSAPP,My card was declined at the supermarket even though I have money,CUS-9100007,,Lagos,Debit Card,12500,2026-10-08T15:20:00Z
+BRANCH,"ATM at the branch did not give me cash but I got a debit alert",CUS-9100008,Ikeja GRA,Lagos,ATM,20000,2026-10-08T16:45:00Z
+BRANCH,Waited almost two hours at the banking hall with only one cashier attending to people,CUS-9100009,Lekki Phase 1,Lagos,,,2026-10-08T11:30:00Z
+WEB,Please how do I request a statement of account for my embassy appointment?,CUS-9100010,,Abuja,,,2026-10-08T09:00:00Z
+EMAIL,"Thank you, the new card arrived quickly and works well",CUS-9100011,,Kano,Debit Card,,2026-10-08T17:10:00Z
+CONTACT_CENTER,"Someone I don't know made a transfer from my account last night, please block it",CUS-9100012,,Benin City,Current Account,150000,2026-10-08T07:55:00Z
