@@ -60,6 +60,8 @@ export const VOLUME_PLANS: Record<string, VolumePlan[]> = {
 };
 
 export interface GeneratedInteraction {
+  /** Scenario the message was generated from — ground truth for evaluation, never stored or shown to the classifier. */
+  scenario: string;
   channel: Channel;
   message: string;
   customer_reference: string;
@@ -181,6 +183,7 @@ function generateOne(
     scenario.products.length > 0 && rng.next() < 0.65 ? PRODUCT_LABELS[rng.pick(scenario.products)] : null;
 
   return {
+    scenario: scenario.key,
     channel: CHANNELS.includes(channel) ? channel : "WEB",
     message: fillTemplate(template, { bank, branch, amount, rng }),
     customer_reference: `CUS-${String(rng.int(1_000_000, 9_999_999))}`,

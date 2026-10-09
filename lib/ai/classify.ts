@@ -17,10 +17,10 @@ import {
 import { AIUnavailableError, mapWithConcurrency, structuredCompletion } from "./claude";
 import { classifyWithRules } from "./rules/classifier";
 
-const BATCH_SIZE = 20;
+export const BATCH_SIZE = 20;
 const CONCURRENCY = 3;
 
-interface PendingInteraction {
+export interface PendingInteraction {
   id: string;
   channel: Channel;
   message: string;
@@ -30,7 +30,7 @@ interface PendingInteraction {
   amount: number | null;
 }
 
-interface ClassifiedRow extends ClassificationResult {
+export interface ClassifiedRow extends ClassificationResult {
   method: "AI" | "RULES";
   model: string | null;
 }
@@ -44,7 +44,8 @@ export interface ClassifyOutcome {
   notes: string[];
 }
 
-async function classifyBatch(
+/** Classifies one batch (AI with per-item rules fallback). Pure: no database writes. */
+export async function classifyBatch(
   batch: PendingInteraction[],
   knownCodes: string[],
   useAI: boolean,

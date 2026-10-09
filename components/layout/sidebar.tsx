@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, Building2, Inbox, LayoutDashboard, Settings, Siren } from "lucide-react";
+import { BrainCircuit, Building2, FlaskConical, Inbox, LayoutDashboard, Settings, Siren } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/complaints", label: "Customer interactions", icon: Inbox },
   { href: "/teams", label: "Teams & impact", icon: Building2 },
   { href: "/insights", label: "Ask ServicePulse", icon: BrainCircuit },
+  { href: "/evaluation", label: "AI evaluation", icon: FlaskConical },
   { href: "/settings", label: "Settings & audit", icon: Settings },
 ];
 
