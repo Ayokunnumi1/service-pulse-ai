@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { BrainCircuit, Loader2, RefreshCw, Sparkles, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,21 +17,33 @@ interface ClassifyResponse {
   notes: string[];
 }
 
-/** Classifies all pending interactions in server-sized batches with live progress. */
-export function ClassifyButton({ pending, size = "default" }: { pending: number; size?: "default" | "sm" | "lg" }) {
+/**
+ * Drives /api/classify in server-sized batches until nothing is pending,
+ * tracking progress. `prepare` runs first (e.g. queueing a re-classification)
+ * and returns the number of interactions it queued.
+ */
+function useClassificationRun(initialTotal: number) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(0);
-  const [total, setTotal] = useState(pending);
+  const [total, setTotal] = useState(initialTotal);
 
-  async function run() {
+  async function run(expected: number, prepare?: () => Promise<number>) {
     setRunning(true);
     setDone(0);
-    setTotal(pending);
+    setTotal(expected);
     let ai = 0;
     let rules = 0;
     const notes = new Set<string>();
     try {
+      if (prepare) {
+        const queued = await prepare();
+        setTotal(queued);
+        if (queued === 0) {
+          toast.info("Nothing to re-classify");
+          return;
+        }
+      }
       for (let i = 0; i < 200; i++) {
         const r = await apiRequest<ClassifyResponse>("/api/classify", { limit: 60 });
         ai += r.aiCount;
@@ -56,28 +68,59 @@ export function ClassifyButton({ pending, size = "default" }: { pending: number;
     }
   }
 
-  if (running) {
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    return (
-      <div className="bg-card ring-foreground/10 flex min-w-64 items-center gap-3 rounded-lg px-3 py-2 ring-1">
-        <Loader2 className="size-4 animate-spin text-[var(--series-1)]" />
-        <div className="flex-1">
-          <div className="text-muted-foreground mb-1 text-xs">
-            Classifying…{" "}
-            <span className="tabular">
-              {done} / {total}
-            </span>
-          </div>
-          <Progress value={pct} className="h-1.5" />
+  return { running, done, total, run };
+}
+
+function ClassifyProgress({ label, done, total }: { label: string; done: number; total: number }) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="bg-card ring-foreground/10 flex min-w-64 items-center gap-3 rounded-lg px-3 py-2 ring-1">
+      <Loader2 className="size-4 animate-spin text-[var(--series-1)]" />
+      <div className="flex-1">
+        <div className="text-muted-foreground mb-1 text-xs">
+          {label}…{" "}
+          <span className="tabular">
+            {done} / {total}
+          </span>
         </div>
+        <Progress value={pct} className="h-1.5" />
       </div>
-    );
+    </div>
+  );
+}
+
+/** Classifies all pending interactions in server-sized batches with live progress. */
+export function ClassifyButton({ pending, size = "default" }: { pending: number; size?: "default" | "sm" | "lg" }) {
+  const { running, done, total, run } = useClassificationRun(pending);
+
+  if (running) return <ClassifyProgress label="Classifying" done={done} total={total} />;
+
+  return (
+    <Button onClick={() => run(pending)} disabled={pending === 0} size={size}>
+      <Sparkles />
+      {pending > 0 ? `Classify ${pending.toLocaleString()} pending` : "All interactions classified"}
+    </Button>
+  );
+}
+
+/**
+ * Re-classifies with AI the interactions the rules fallback handled — e.g.
+ * data classified before ANTHROPIC_API_KEY was configured.
+ */
+export function ReclassifyButton({ rulesCount }: { rulesCount: number }) {
+  const { running, done, total, run } = useClassificationRun(rulesCount);
+
+  if (running) return <ClassifyProgress label="Re-classifying with AI" done={done} total={total} />;
+
+  async function queue() {
+    const r = await apiRequest<{ queued: number }>("/api/classify/reclassify", { scope: "RULES" });
+    return r.queued;
   }
 
   return (
-    <Button onClick={run} disabled={pending === 0} size={size}>
-      <Sparkles />
-      {pending > 0 ? `Classify ${pending.toLocaleString()} pending` : "All interactions classified"}
+    <Button variant="outline" onClick={() => run(rulesCount, queue)} disabled={rulesCount === 0}>
+      <WandSparkles />
+      Re-classify {rulesCount.toLocaleString()} with AI
     </Button>
   );
 }

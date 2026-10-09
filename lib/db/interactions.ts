@@ -103,6 +103,16 @@ export async function insertImportedInteractions(bankId: string, rows: ImportRow
   return records.length;
 }
 
+/** Interactions currently classified by the rules fallback (candidates for AI re-classification). */
+export async function getRulesClassifiedCount(bankId: string): Promise<number> {
+  const [row] = await sql<{ n: number }[]>`
+    select count(*)::int as n
+    from interaction_classifications c
+    join interactions i on i.id = c.interaction_id and i.bank_id = c.bank_id
+    where c.bank_id = ${bankId} and c.method = 'RULES' and i.status = 'CLASSIFIED'`;
+  return row?.n ?? 0;
+}
+
 export async function getPendingCount(bankId: string): Promise<number> {
   const [row] = await sql<{ n: number }[]>`
     select count(*)::int as n from interactions where bank_id = ${bankId} and status = 'PENDING'`;

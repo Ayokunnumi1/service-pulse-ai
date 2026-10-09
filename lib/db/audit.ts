@@ -8,6 +8,7 @@ export interface AuditInput {
   issueId?: string | null;
   eventType:
     | "CLASSIFICATION_BATCH"
+    | "RECLASSIFICATION_QUEUED"
     | "ISSUES_RECOMPUTED"
     | "DATA_IMPORTED"
     | "ROOT_CAUSE_ANALYSIS"

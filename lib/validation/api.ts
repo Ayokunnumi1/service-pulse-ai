@@ -16,6 +16,10 @@ export const ClassifyRequestSchema = z.object({
   limit: z.number().int().min(1).max(200).default(60),
 });
 
+export const ReclassifyRequestSchema = z.object({
+  scope: z.enum(["RULES", "ALL"]).default("RULES"),
+});
+
 export const AssignIssueSchema = z.discriminatedUnion("mode", [
   z.object({
     mode: z.literal("accept"),

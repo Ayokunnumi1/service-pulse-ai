@@ -97,6 +97,32 @@ async function classifyBatch(
   }
 }
 
+export type ReclassifyScope = "RULES" | "ALL";
+
+/**
+ * Queues already-classified interactions for re-classification by moving
+ * them back to PENDING. Existing classifications stay in place (and keep
+ * feeding the dashboards) until the next classification run overwrites them.
+ * Scope "RULES" re-queues only interactions the rules fallback classified.
+ */
+export async function queueReclassification(bankId: string, scope: ReclassifyScope, actor = "SYSTEM"): Promise<number> {
+  const rows = await sql<{ id: string }[]>`
+    update interactions i set status = 'PENDING'
+    from interaction_classifications c
+    where i.bank_id = ${bankId} and c.bank_id = i.bank_id and c.interaction_id = i.id
+      and i.status = 'CLASSIFIED' ${scope === "RULES" ? sql`and c.method = 'RULES'` : sql``}
+    returning i.id`;
+  if (rows.length > 0) {
+    await writeAudit({
+      bankId,
+      eventType: "RECLASSIFICATION_QUEUED",
+      actor,
+      details: { scope, interactions: rows.length },
+    });
+  }
+  return rows.length;
+}
+
 /**
  * Classifies up to `limit` PENDING interactions for one bank.
  * Every result is validated with Zod before it is stored.

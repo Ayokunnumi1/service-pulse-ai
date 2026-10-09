@@ -1,8 +1,9 @@
 import "./load-env";
 import { analyzeIssue, listSignificantIssues } from "@/lib/ai/analyze-issue";
-import { classifyPending } from "@/lib/ai/classify";
+import { classifyPending, queueReclassification, type ReclassifyScope } from "@/lib/ai/classify";
 import { recomputeIssues } from "@/lib/clustering/aggregate";
 import { closeSql, sql } from "@/lib/db/client";
+import { aiConfigured } from "@/lib/env";
 import type { Bank } from "@/types";
 
 /**
@@ -10,10 +11,19 @@ import type { Bank } from "@/types";
  *   npm run classify                       classify all pending interactions for every bank
  *   npm run classify -- --bank=kestrel-trust
  *   npm run classify -- --analyze          also run root-cause + team recommendation for significant issues
+ *   npm run classify -- --reclassify       re-classify with AI everything the rules fallback classified
+ *   npm run classify -- --reclassify=all   re-classify every interaction with AI
  */
 async function main() {
   const bankArg = process.argv.find((a) => a.startsWith("--bank="))?.split("=")[1];
   const analyze = process.argv.includes("--analyze");
+  const reclassifyArg = process.argv.find((a) => a === "--reclassify" || a.startsWith("--reclassify="));
+  const reclassify: ReclassifyScope | null = reclassifyArg
+    ? reclassifyArg.split("=")[1]?.toLowerCase() === "all"
+      ? "ALL"
+      : "RULES"
+    : null;
+  if (reclassify && !aiConfigured()) throw new Error("--reclassify needs ANTHROPIC_API_KEY (AI is not configured)");
 
   const banks = await sql<Bank[]>`
     select id, slug, name, description, logo_url, currency, status, created_at from banks
@@ -24,6 +34,11 @@ async function main() {
 
   for (const bank of banks) {
     console.log(`\n${bank.name}`);
+    if (reclassify) {
+      const queued = await queueReclassification(bank.id, reclassify, "CLI");
+      const what = reclassify === "ALL" ? "all" : "rules-classified only";
+      console.log(`  queued ${queued} interaction(s) for AI re-classification (${what})`);
+    }
     let total = 0;
     for (;;) {
       const r = await classifyPending(bank.id, 100, "CLI");

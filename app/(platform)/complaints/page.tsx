@@ -6,7 +6,7 @@ import { InteractionFilters } from "@/components/complaints/filters";
 import { ImportDialog } from "@/components/complaints/import-dialog";
 import { MethodBadge, SeverityBadge } from "@/components/shared/badges";
 import { EmptyState, PageHeader } from "@/components/shared/page-header";
-import { ClassifyButton } from "@/components/shared/pipeline-actions";
+import { ClassifyButton, ReclassifyButton } from "@/components/shared/pipeline-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +21,14 @@ import {
   humanize,
   issueTitle,
 } from "@/lib/constants";
-import { getPendingCount, listInteractions, listIssueGroupsInUse, parseFilters } from "@/lib/db/interactions";
+import {
+  getPendingCount,
+  getRulesClassifiedCount,
+  listInteractions,
+  listIssueGroupsInUse,
+  parseFilters,
+} from "@/lib/db/interactions";
+import { aiConfigured } from "@/lib/env";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/utils/format";
 
 export const metadata: Metadata = { title: "Customer interactions" };
@@ -34,10 +41,12 @@ export default async function ComplaintsPage({
   const bank = await requireBank();
   const params = await searchParams;
   const filters = parseFilters(params);
-  const [result, pending, groups] = await Promise.all([
+  const ai = aiConfigured();
+  const [result, pending, groups, rulesCount] = await Promise.all([
     listInteractions(bank.id, filters),
     getPendingCount(bank.id),
     listIssueGroupsInUse(bank.id),
+    ai ? getRulesClassifiedCount(bank.id) : Promise.resolve(0),
   ]);
 
   const pageHref = (page: number) => {
@@ -57,6 +66,7 @@ export default async function ComplaintsPage({
           <>
             <ImportDialog />
             {pending > 0 && <ClassifyButton pending={pending} />}
+            {pending === 0 && rulesCount > 0 && <ReclassifyButton rulesCount={rulesCount} />}
           </>
         }
       />
