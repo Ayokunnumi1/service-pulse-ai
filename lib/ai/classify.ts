@@ -127,11 +127,17 @@ export async function queueReclassification(bankId: string, scope: ReclassifySco
  * Classifies up to `limit` PENDING interactions for one bank.
  * Every result is validated with Zod before it is stored.
  */
-export async function classifyPending(bankId: string, limit: number, actor = "SYSTEM"): Promise<ClassifyOutcome> {
+export async function classifyPending(
+  bankId: string,
+  limit: number,
+  actor = "SYSTEM",
+  opts: { onlyIds?: string[] } = {},
+): Promise<ClassifyOutcome> {
   const pending = await sql<PendingInteraction[]>`
     select id, channel, message, branch, location, product, amount
     from interactions
     where bank_id = ${bankId} and status = 'PENDING'
+      ${opts.onlyIds ? sql`and id = any(${opts.onlyIds})` : sql``}
     order by occurred_at
     limit ${limit}`;
 

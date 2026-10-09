@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ISSUE_STATUSES, PRODUCTS } from "@/lib/constants";
+import { INCIDENT_SCENARIO_KEYS } from "@/lib/simulation/scenarios";
 
 /** Request-body schemas for every mutating API route. */
 
@@ -18,6 +19,11 @@ export const ClassifyRequestSchema = z.object({
 
 export const ReclassifyRequestSchema = z.object({
   scope: z.enum(["RULES", "ALL"]).default("RULES"),
+});
+
+export const SimulateIncidentSchema = z.object({
+  scenario: z.enum(INCIDENT_SCENARIO_KEYS),
+  count: z.number().int().min(10).max(40).default(28),
 });
 
 export const AssignIssueSchema = z.discriminatedUnion("mode", [

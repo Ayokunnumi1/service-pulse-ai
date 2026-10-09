@@ -9,6 +9,8 @@ export interface AuditInput {
   eventType:
     | "CLASSIFICATION_BATCH"
     | "RECLASSIFICATION_QUEUED"
+    | "INCIDENT_SIMULATED"
+    | "SIMULATION_CLEARED"
     | "ISSUES_RECOMPUTED"
     | "DATA_IMPORTED"
     | "ROOT_CAUSE_ANALYSIS"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BarList } from "@/components/charts/bar-list";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { EarlyWarningList } from "@/components/dashboard/early-warning-list";
+import { SimulateIncidentDialog } from "@/components/dashboard/simulate-incident";
 import { PageHeader } from "@/components/shared/page-header";
 import { AnalyzeSignificantButton, ClassifyButton } from "@/components/shared/pipeline-actions";
 import { StatCard } from "@/components/shared/stat-card";
@@ -12,6 +13,8 @@ import { requireBank } from "@/lib/bank-context";
 import { issueColor, OTHER_COLOR } from "@/lib/chart-colors";
 import { getIssuesByOwner, getKpis, getTopBreakdowns, getTrendSeries } from "@/lib/db/dashboard";
 import { listIssues } from "@/lib/db/issues";
+import { aiConfigured } from "@/lib/env";
+import { countSimulatedInteractions } from "@/lib/simulation/incident";
 import { SIGNIFICANT_TRENDS } from "@/lib/scoring/trend";
 import { formatDate, formatGrowth, formatNumber } from "@/lib/utils/format";
 import { growthPercent } from "@/lib/scoring/trend";
@@ -20,12 +23,13 @@ export const metadata: Metadata = { title: "Executive dashboard" };
 
 export default async function DashboardPage() {
   const bank = await requireBank();
-  const [kpis, trend, owners, breakdowns, issues] = await Promise.all([
+  const [kpis, trend, owners, breakdowns, issues, simulated] = await Promise.all([
     getKpis(bank.id),
     getTrendSeries(bank.id),
     getIssuesByOwner(bank.id),
     getTopBreakdowns(bank.id),
     listIssues(bank.id, { view: "active" }),
+    countSimulatedInteractions(bank.id),
   ]);
 
   const significant = issues.filter(
@@ -58,6 +62,7 @@ export default async function DashboardPage() {
         }
         actions={
           <>
+            {kpis.classified > 0 && <SimulateIncidentDialog aiEnabled={aiConfigured()} simulatedCount={simulated} />}
             {kpis.pending > 0 && kpis.classified > 0 && <ClassifyButton pending={kpis.pending} />}
             {unanalysed > 0 && <AnalyzeSignificantButton variant={kpis.pending > 0 ? "outline" : "default"} />}
           </>
