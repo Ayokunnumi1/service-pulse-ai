@@ -20,7 +20,8 @@ import type { Bank } from "@/types";
 import { AIUnavailableError, structuredCompletion } from "./claude";
 import { recommendedActionFor, rootCauseWithRules } from "./rules/root-cause";
 import { evidenceRef, resolveEvidence, rulesEvidence, type EvidenceLink } from "./evidence";
-import { recommendTeamWithRules } from "./rules/team-matcher";
+import { humanOwnerFor, listRoutingDecisions, selectPrecedents } from "./feedback";
+import { recommendFromPrecedent, recommendTeamWithRules } from "./rules/team-matcher";
 import { validateTeamRecommendation, type DirectoryEntry, type ValidatedOwnership } from "./team-validation";
 
 const LABEL_TO_PRODUCT = new Map(
@@ -39,13 +40,16 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
   const issue = await getIssue(bank.id, issueId);
   if (!issue) throw new IssueNotFoundError("Issue not found");
 
-  const [signals, labels, systems, directory, teams] = await Promise.all([
+  const [signals, labels, systems, directory, teams, decisions] = await Promise.all([
     getCustomerSignals(bank.id, issue.issue_code, 12),
     getSpecificIssueLabels(bank.id, issue.issue_code),
     listSystems(bank.id),
     getDirectoryForPrompt(bank.id),
     listTeams(bank.id),
+    listRoutingDecisions(bank.id),
   ]);
+  // Human feedback loop: past routing decisions by this bank's managers.
+  const precedents = selectPrecedents(decisions, issue.issue_code);
 
   const evidence: IssueEvidence = {
     issue_code: issue.issue_code,
@@ -148,6 +152,7 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
   let reason = "";
   let action = recommendedActionFor(issue.issue_code);
   let teamMethod: "AI" | "RULES" = "RULES";
+  let precedentUsed = false;
 
   if (directory.length === 0) {
     ownership = {
@@ -179,6 +184,16 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
               sample_customer_messages: signals.slice(0, 5).map((s) => forAI(s.message, 200)),
             },
             directory,
+            precedents.map((p) => ({
+              issue_code: p.issueCode,
+              issue_title: p.issueTitle,
+              likely_root_cause: p.rootCause ? forAI(p.rootCause, 200) : null,
+              decision: p.kind,
+              ai_recommended_team: p.recommendedTeamName,
+              human_assigned_team_id: p.assignedTeamId,
+              human_assigned_team: p.assignedTeamName,
+              human_reason: p.reason ? forAI(p.reason, 300) : null,
+            })),
           ),
         });
         model ??= res.model;
@@ -194,6 +209,7 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
           };
         } else {
           ownership = validateTeamRecommendation(parsed.data, entries);
+          precedentUsed = parsed.data.precedent_used && ownership.status === "RECOMMENDED";
           reason = parsed.data.reason;
           action = parsed.data.recommended_action || action;
         }
@@ -204,8 +220,12 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
       }
     }
     if (!aiDone) {
-      const rec = recommendTeamWithRules(issue.issue_code, topProducts, directory);
+      const human = humanOwnerFor(decisions, issue.issue_code);
+      const rec =
+        (human && recommendFromPrecedent(issue.issue_code, topProducts, directory, human)) ??
+        recommendTeamWithRules(issue.issue_code, topProducts, directory);
       ownership = validateTeamRecommendation(rec, entries);
+      precedentUsed = rec.precedent_used && ownership.status === "RECOMMENDED";
       reason = rec.reason;
       action = rec.recommended_action;
     }
@@ -229,6 +249,12 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
     sample_interaction_ids: signals.map((s) => s.id),
     directory_team_ids: directory.map((d) => d.team_id),
     methods: { root_cause: rcaMethod, team_recommendation: teamMethod },
+    feedback: {
+      precedents_supplied: precedents.length,
+      corrections_supplied: precedents.filter((p) => p.kind !== "CONFIRMED").length,
+      precedent_issue_ids: precedents.map((p) => p.issueId),
+      precedent_used: precedentUsed,
+    },
   };
 
   const analysisId = await sql.begin(async (tx) => {

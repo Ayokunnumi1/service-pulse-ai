@@ -67,6 +67,7 @@ export function recommendTeamWithRules(
       secondary_teams: [],
       reason: `${NO_CLEAR_OWNER}: no team in the directory lists responsibilities that cover this issue.`,
       recommended_action: "Manual assignment required.",
+      precedent_used: false,
     };
   }
 
@@ -97,5 +98,40 @@ export function recommendTeamWithRules(
       `${best.team.responsibilities.slice(0, 4).join(", ")}.` +
       (secondary.length ? ` ${secondary.map((s) => s.team.team_name).join(" and ")} should assist.` : ""),
     recommended_action: recommendedActionFor(issueCode),
+    precedent_used: false,
+  };
+}
+
+/**
+ * Rules fallback for the feedback loop: when a manager has corrected or
+ * manually assigned this issue group before, follow that decision (the team
+ * must still exist in the directory). The keyword match supplies secondary
+ * teams.
+ */
+export function recommendFromPrecedent(
+  issueCode: string,
+  topProducts: string[],
+  directory: DirectoryTeamForPrompt[],
+  precedent: { assignedTeamId: string; reason: string | null; decidedAt: Date },
+): TeamRecommendationResult | null {
+  const team = directory.find((t) => t.team_id === precedent.assignedTeamId);
+  if (!team) return null;
+  const secondary = scoreTeams(issueCode, topProducts, directory)
+    .filter((s) => s.team.team_id !== team.team_id && s.score >= SECONDARY_MIN_SCORE)
+    .slice(0, 2);
+  const date = precedent.decidedAt.toISOString().slice(0, 10);
+  return {
+    ownership_status: "RECOMMENDED",
+    primary_team: { team_id: team.team_id, team_name: team.team_name, department: team.department, confidence: 0.85 },
+    secondary_teams: secondary.map((s) => ({
+      team_id: s.team.team_id,
+      team_name: s.team.team_name,
+      reason: `Responsibilities include: ${s.team.responsibilities.slice(0, 3).join(", ")}.`,
+    })),
+    reason:
+      `Following a previous human routing decision for this issue (${date}): ${team.team_name} was chosen` +
+      (precedent.reason ? ` because "${precedent.reason}".` : "."),
+    recommended_action: recommendedActionFor(issueCode),
+    precedent_used: true,
   };
 }

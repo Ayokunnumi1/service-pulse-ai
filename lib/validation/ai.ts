@@ -124,6 +124,7 @@ export const AITeamRecommendationSchema = z.object({
   ),
   reason: z.string().describe("Why this team owns the problem, referencing its listed responsibilities."),
   recommended_action: z.string(),
+  precedent_used: z.boolean().describe("True only if a routing precedent changed or decided the primary team."),
 });
 
 export const ValidatedTeamRecommendationSchema = AITeamRecommendationSchema.extend({

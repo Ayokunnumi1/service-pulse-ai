@@ -115,6 +115,13 @@ export interface IssueAnalysis {
   recommended_action: string;
   validation_notes: string[];
   evidence: EvidenceLink[];
+  /** Human feedback loop: routing precedents given to the recommender (null for older analyses). */
+  feedback: {
+    precedents_supplied: number;
+    corrections_supplied: number;
+    precedent_issue_ids: string[];
+    precedent_used: boolean;
+  } | null;
   created_at: Date;
 }
 

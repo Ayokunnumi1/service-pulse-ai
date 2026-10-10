@@ -4,9 +4,11 @@ import Link from "next/link";
 import { RiskBadge, TrendBadge } from "@/components/shared/badges";
 import { PageHeader } from "@/components/shared/page-header";
 import { DirectoryEditor } from "@/components/teams/directory-editor";
+import { RoutingFeedbackCard } from "@/components/teams/routing-feedback";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireBank } from "@/lib/bank-context";
 import type { RiskLevel, TrendStatus } from "@/lib/constants";
+import { feedbackStats, listRoutingDecisions } from "@/lib/ai/feedback";
 import { getTeamImpact } from "@/lib/db/dashboard";
 import { getDirectory, listProducts } from "@/lib/db/directory";
 import { formatNumber } from "@/lib/utils/format";
@@ -15,10 +17,11 @@ export const metadata: Metadata = { title: "Teams & impact" };
 
 export default async function TeamsPage() {
   const bank = await requireBank();
-  const [impact, directory, products] = await Promise.all([
+  const [impact, directory, products, decisions] = await Promise.all([
     getTeamImpact(bank.id),
     getDirectory(bank.id),
     listProducts(bank.id),
+    listRoutingDecisions(bank.id),
   ]);
 
   const byDepartment = new Map<string, typeof impact>();
@@ -117,6 +120,8 @@ export default async function TeamsPage() {
           ))}
         </CardContent>
       </Card>
+
+      <RoutingFeedbackCard stats={feedbackStats(decisions)} decisions={decisions} />
 
       <div className="mt-6">
         <DirectoryEditor departments={directory} products={products.map((p) => ({ code: p.code, name: p.name }))} />

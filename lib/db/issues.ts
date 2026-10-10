@@ -59,7 +59,7 @@ const analysisColumns = () => sql`
   a.root_cause_confidence, a.alternative_causes, a.affected_systems, a.recommended_investigation,
   a.management_insight, a.ownership_status, a.primary_department_id, d.name as primary_department_name,
   a.primary_team_id, t.name as primary_team_name, a.primary_team_confidence, a.secondary_teams,
-  a.ownership_reason, a.recommended_action, a.validation_notes, a.evidence, a.created_at`;
+  a.ownership_reason, a.recommended_action, a.validation_notes, a.evidence, a.input_snapshot->'feedback' as feedback, a.created_at`;
 
 export async function listAnalyses(bankId: string, issueId: string): Promise<IssueAnalysis[]> {
   return sql<IssueAnalysis[]>`

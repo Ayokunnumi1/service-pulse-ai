@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { recommendTeamWithRules } from "@/lib/ai/rules/team-matcher";
+import { recommendFromPrecedent, recommendTeamWithRules } from "@/lib/ai/rules/team-matcher";
+import { feedbackStats, humanOwnerFor, selectPrecedents, type RoutingDecision } from "@/lib/ai/feedback";
 import { validateTeamRecommendation, type DirectoryEntry } from "@/lib/ai/team-validation";
 import { HARBOURLINE, KESTREL, type SeedBank } from "@/data/seed/organisation";
 import type { DirectoryTeamForPrompt } from "@/prompts/team-recommendation";
@@ -43,6 +44,7 @@ describe("team recommendation guardrails (no hallucinated ownership)", () => {
     ],
     reason: "Transaction processing",
     recommended_action: "Investigate",
+    precedent_used: false,
   };
 
   it("accepts teams that exist in the directory and takes names from the directory", () => {
@@ -148,5 +150,80 @@ describe("rules-based team matcher (AI fallback)", () => {
       if (r.primary_team) expect(ids.has(r.primary_team.team_id)).toBe(true);
       for (const s of r.secondary_teams) expect(ids.has(s.team_id)).toBe(true);
     }
+  });
+});
+
+describe("human feedback loop", () => {
+  const decision = (over: Partial<RoutingDecision>): RoutingDecision => ({
+    issueId: "i1",
+    issueCode: "USSD_SERVICE_FAILURE",
+    issueTitle: "USSD Service Failure",
+    rootCause: null,
+    kind: "CORRECTION",
+    recommendedTeamName: "Digital Team",
+    assignedTeamId: "t1",
+    assignedTeamName: "Infrastructure & Networks",
+    reason: "Telco gateway outage, not the app",
+    actor: "Demo User",
+    decidedAt: new Date("2026-10-08T10:00:00Z"),
+    ...over,
+  });
+
+  const decisions = [
+    decision({ issueId: "a", issueCode: "CARD_PAYMENT_FAILURE", kind: "CONFIRMED" }),
+    decision({ issueId: "b", issueCode: "ATM_WITHDRAWAL_FAILURE", kind: "MANUAL", recommendedTeamName: null }),
+    decision({ issueId: "c" }),
+  ];
+
+  it("puts precedents for the same issue group first and skips unrelated confirmations", () => {
+    const p = selectPrecedents(decisions, "USSD_SERVICE_FAILURE");
+    expect(p.map((d) => d.issueId)).toEqual(["c", "b"]);
+  });
+
+  it("uses a human correction as the owner, but not a plain confirmation", () => {
+    expect(humanOwnerFor(decisions, "USSD_SERVICE_FAILURE")?.issueId).toBe("c");
+    expect(humanOwnerFor(decisions, "CARD_PAYMENT_FAILURE")).toBeNull();
+  });
+
+  it("keeps the lesson when the corrected recommendation is later accepted", () => {
+    const history = [
+      decision({ issueId: "c", kind: "CONFIRMED", recommendedTeamName: "Infrastructure & Networks", reason: null }),
+      decision({ issueId: "c" }), // earlier correction Digital Team -> Infrastructure
+    ];
+    expect(humanOwnerFor(history, "USSD_SERVICE_FAILURE")?.reason).toBe("Telco gateway outage, not the app");
+    // A later reassignment to a different team supersedes the lesson.
+    const reassigned = [decision({ issueId: "c", kind: "CONFIRMED", assignedTeamId: "t9" }), ...history];
+    expect(humanOwnerFor(reassigned, "USSD_SERVICE_FAILURE")).toBeNull();
+  });
+
+  it("measures how often managers accept the AI's team", () => {
+    expect(feedbackStats(decisions)).toEqual({
+      decisions: 3,
+      confirmed: 1,
+      corrected: 1,
+      manual: 1,
+      acceptanceRate: 0.5,
+    });
+  });
+
+  it("rules fallback follows a correction only to a team that still exists", () => {
+    const dir = directoryFor(HARBOURLINE);
+    const infra = dir.find((d) => d.team_name.startsWith("Infrastructure"))!;
+    const rec = recommendFromPrecedent("USSD_SERVICE_FAILURE", ["USSD_BANKING"], dir, {
+      assignedTeamId: infra.team_id,
+      reason: "Telco gateway outage",
+      decidedAt: new Date("2026-10-08T10:00:00Z"),
+    });
+    expect(rec?.primary_team?.team_id).toBe(infra.team_id);
+    expect(rec?.precedent_used).toBe(true);
+    expect(rec?.reason).toContain("Telco gateway outage");
+    expect(validateTeamRecommendation(rec!, entries(dir)).status).toBe("RECOMMENDED");
+
+    const gone = recommendFromPrecedent("USSD_SERVICE_FAILURE", [], dir, {
+      assignedTeamId: "deleted-team",
+      reason: null,
+      decidedAt: new Date(),
+    });
+    expect(gone).toBeNull();
   });
 });

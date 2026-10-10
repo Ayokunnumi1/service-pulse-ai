@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Building2,
+  GraduationCap,
   Lightbulb,
   ListChecks,
   MessageSquareQuote,
@@ -358,6 +359,24 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
               <CardDescription>Selected only from this bank&apos;s team directory.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {analysis?.feedback && analysis.feedback.corrections_supplied > 0 && (
+                <div
+                  className={
+                    analysis.feedback.precedent_used
+                      ? "flex gap-2 rounded-lg bg-[color-mix(in_oklch,var(--series-1)_8%,white)] p-2.5 text-xs ring-1 ring-[var(--series-1)]/25"
+                      : "text-muted-foreground flex gap-2 text-xs"
+                  }
+                >
+                  <GraduationCap className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    {analysis.feedback.precedent_used
+                      ? "Learned from your team: this recommendation follows a previous human routing correction."
+                      : `Considered ${analysis.feedback.corrections_supplied} previous human routing correction${
+                          analysis.feedback.corrections_supplied === 1 ? "" : "s"
+                        }.`}
+                  </span>
+                </div>
+              )}
               {!analysis ? (
                 <p className="text-muted-foreground text-sm">
                   Run the AI analysis to get an owner recommendation, or assign a team manually.

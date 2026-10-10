@@ -170,6 +170,10 @@ export function AssignmentControls({
               className="bg-card"
               placeholder="e.g. Incident already open with this team"
             />
+            <p className="text-muted-foreground text-xs">
+              ServicePulse learns from this: your choice and reason guide future owner recommendations for similar
+              issues.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={!teamId || reason.trim().length < 3 || busy !== null}>
