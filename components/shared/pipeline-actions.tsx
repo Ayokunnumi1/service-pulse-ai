@@ -1,12 +1,24 @@
 "use client";
 
-import { BrainCircuit, Loader2, RefreshCw, Sparkles, WandSparkles } from "lucide-react";
+import { BrainCircuit, GitMerge, Loader2, RefreshCw, Sparkles, WandSparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { apiRequest } from "@/lib/client-api";
+
+export interface ConsolidationResponse {
+  candidates: number;
+  merges: { from: string; to: string; fromTitle: string; toTitle: string; complaints: number; reason: string }[];
+  kept: { code: string; title: string; reason: string }[];
+  notes: string[];
+}
+
+export function describeMerges(r: ConsolidationResponse): string {
+  if (r.merges.length === 0) return "No near-duplicate issue groups found.";
+  return r.merges.map((m) => `${m.fromTitle} → ${m.toTitle} (${m.complaints})`).join("; ");
+}
 
 interface ClassifyResponse {
   processed: number;
@@ -59,6 +71,19 @@ function useClassificationRun(initialTotal: number) {
             ? `${ai} by AI${rules ? `, ${rules} by rules fallback` : ""}. Issues and trends recalculated.`
             : `Rules fallback used (${[...notes][0] ?? "AI not configured"}). Issues and trends recalculated.`,
       });
+      // AI may have created new issue groups — merge near-duplicates straight away.
+      if (ai > 0) {
+        try {
+          const c = await apiRequest<ConsolidationResponse>("/api/issues/consolidate");
+          if (c.merges.length > 0) {
+            toast.success(`Merged ${c.merges.length} near-duplicate issue group${c.merges.length === 1 ? "" : "s"}`, {
+              description: describeMerges(c),
+            });
+          }
+        } catch {
+          // Consolidation is best-effort here; it can be re-run from the Issues page.
+        }
+      }
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Classification failed");
@@ -180,6 +205,42 @@ export function RecomputeButton() {
     <Button variant="outline" onClick={run} disabled={running}>
       <RefreshCw className={running ? "animate-spin" : undefined} />
       Recalculate trends
+    </Button>
+  );
+}
+
+/** Merges near-duplicate issue groups the classifier created (AI decision, validated and audited). */
+export function ConsolidateButton({ candidates }: { candidates: number }) {
+  const router = useRouter();
+  const [running, setRunning] = useState(false);
+  async function run() {
+    setRunning(true);
+    try {
+      const r = await apiRequest<ConsolidationResponse>("/api/issues/consolidate");
+      const kept = r.kept.length > 0 ? ` ${r.kept.length} kept as distinct problems.` : "";
+      if (r.merges.length > 0) {
+        toast.success(`Merged ${r.merges.length} issue group${r.merges.length === 1 ? "" : "s"}`, {
+          description: `${describeMerges(r)}.${kept}`,
+        });
+      } else {
+        toast.info("No near-duplicates to merge", { description: (r.notes[0] ?? "") + kept });
+      }
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Consolidation failed");
+    } finally {
+      setRunning(false);
+    }
+  }
+  return (
+    <Button
+      variant="outline"
+      onClick={run}
+      disabled={running || candidates === 0}
+      title={candidates === 0 ? "All issue groups are in the standard taxonomy" : undefined}
+    >
+      {running ? <Loader2 className="animate-spin" /> : <GitMerge />}
+      Consolidate groups{candidates > 0 ? ` (${candidates})` : ""}
     </Button>
   );
 }

@@ -24,6 +24,7 @@ export const POST = withBank(async (req, bank) => {
   return NextResponse.json({
     batchId: sim.batchId,
     injected: sim.interactionIds.length,
+    interactionIds: sim.interactionIds,
     aiCount: classified.aiCount,
     rulesCount: classified.rulesCount,
     notes: classified.notes,

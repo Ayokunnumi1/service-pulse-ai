@@ -186,3 +186,14 @@ export async function addNote(bankId: string, issueId: string, author: string, n
     returning id`;
   return row!;
 }
+
+/**
+ * Issue codes that currently have complaints. Used as "already in use"
+ * hints for the classifier — merged-away (emptied) groups are excluded so
+ * the model is not steered back towards them.
+ */
+export async function listActiveIssueCodes(bankId: string): Promise<string[]> {
+  const rows = await sql<{ issue_code: string }[]>`
+    select issue_code from issues where bank_id = ${bankId} and total_complaints > 0`;
+  return rows.map((r) => r.issue_code);
+}

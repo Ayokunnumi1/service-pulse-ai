@@ -26,6 +26,10 @@ export const SimulateIncidentSchema = z.object({
   count: z.number().int().min(10).max(40).default(28),
 });
 
+export const LocateSimulationSchema = z.object({
+  interactionIds: z.array(uuid).min(1).max(100),
+});
+
 export const AssignIssueSchema = z.discriminatedUnion("mode", [
   z.object({
     mode: z.literal("accept"),

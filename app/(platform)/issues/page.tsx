@@ -4,11 +4,12 @@ import Link from "next/link";
 import { OwnerLine } from "@/components/dashboard/early-warning-list";
 import { IssueStatusBadge, RiskBadge, SeverityBadge, TrendBadge } from "@/components/shared/badges";
 import { EmptyState, PageHeader } from "@/components/shared/page-header";
-import { AnalyzeSignificantButton, RecomputeButton } from "@/components/shared/pipeline-actions";
+import { AnalyzeSignificantButton, ConsolidateButton, RecomputeButton } from "@/components/shared/pipeline-actions";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireBank } from "@/lib/bank-context";
 import { RISK_LEVELS, TREND_LABELS, TREND_STATUSES, humanize } from "@/lib/constants";
+import { countCandidateGroups } from "@/lib/ai/consolidate";
 import { listIssues, type IssueView } from "@/lib/db/issues";
 import { formatDate, formatGrowth, formatNumber, formatPct } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,10 @@ export default async function IssuesPage({
   const view: IssueView = VIEWS.some((v) => v.value === params.view) ? (params.view as IssueView) : "active";
   const trend = TREND_STATUSES.includes(params.trend as never) ? params.trend : undefined;
   const risk = RISK_LEVELS.includes(params.risk as never) ? params.risk : undefined;
-  const issues = await listIssues(bank.id, { view, trend, risk });
+  const [issues, candidates] = await Promise.all([
+    listIssues(bank.id, { view, trend, risk }),
+    countCandidateGroups(bank.id),
+  ]);
 
   const link = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams();
@@ -58,6 +62,7 @@ export default async function IssuesPage({
         actions={
           <>
             <RecomputeButton />
+            <ConsolidateButton candidates={candidates} />
             <AnalyzeSignificantButton />
           </>
         }

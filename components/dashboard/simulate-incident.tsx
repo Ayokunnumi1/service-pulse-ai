@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { RiskBadge, TrendBadge } from "@/components/shared/badges";
+import { describeMerges, type ConsolidationResponse } from "@/components/shared/pipeline-actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ interface LocatedIssue {
 interface SimulateResponse {
   batchId: string;
   injected: number;
+  interactionIds: string[];
   aiCount: number;
   rulesCount: number;
   notes: string[];
@@ -44,7 +46,7 @@ interface AnalyzeResponse {
   ownershipStatus: "RECOMMENDED" | "NO_CLEAR_OWNER" | "REJECTED_INVALID_TEAM";
 }
 
-type Phase = "pick" | "classifying" | "analysing" | "done";
+type Phase = "pick" | "classifying" | "consolidating" | "analysing" | "done";
 
 const COUNT = 28;
 
@@ -60,27 +62,45 @@ export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnable
   const [phase, setPhase] = useState<Phase>("pick");
   const [sim, setSim] = useState<SimulateResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null);
+  const [consolidation, setConsolidation] = useState<ConsolidationResponse | null>(null);
   const [clearing, setClearing] = useState(false);
 
   const main = sim?.issues[0] ?? null;
-  const running = phase === "classifying" || phase === "analysing";
+  const running = phase === "classifying" || phase === "consolidating" || phase === "analysing";
 
   function reset() {
     setPhase("pick");
     setSim(null);
     setAnalysis(null);
+    setConsolidation(null);
   }
 
   async function run() {
     setPhase("classifying");
     setSim(null);
     setAnalysis(null);
+    setConsolidation(null);
     let injected = false;
     try {
       const r = await apiRequest<SimulateResponse>("/api/simulate", { scenario, count: COUNT });
       injected = true;
       setSim(r);
-      const top = r.issues[0];
+      let issues = r.issues;
+      if (r.aiCount > 0) {
+        // The AI may have split the incident across new, near-duplicate groups — merge them.
+        setPhase("consolidating");
+        const c = await apiRequest<ConsolidationResponse>("/api/issues/consolidate");
+        setConsolidation(c);
+        if (c.merges.length > 0) {
+          issues = (
+            await apiRequest<{ issues: LocatedIssue[] }>("/api/simulate/locate", {
+              interactionIds: r.interactionIds,
+            })
+          ).issues;
+          setSim({ ...r, issues });
+        }
+      }
+      const top = issues[0];
       if (!top) {
         toast.warning("No complaint issue was detected for the simulated messages.");
         setPhase("done");
@@ -126,6 +146,19 @@ export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnable
       label: `Classify and normalise into issue groups (${classifier}), recalculate trends and risk`,
       state: phase === "classifying" ? "active" : phase === "pick" ? "todo" : "done",
     },
+    ...(aiEnabled
+      ? [
+          {
+            label: "Merge near-duplicate issue groups into one problem (Claude Opus)",
+            state:
+              phase === "consolidating"
+                ? ("active" as const)
+                : (phase === "analysing" || phase === "done") && consolidation
+                  ? ("done" as const)
+                  : ("todo" as const),
+          },
+        ]
+      : []),
     {
       label: `Root-cause hypothesis and responsible-team recommendation (${analyst})`,
       state: phase === "analysing" ? "active" : phase === "done" && analysis ? "done" : "todo",
@@ -222,6 +255,9 @@ export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnable
                   </div>
                 )}
               </>
+            )}
+            {consolidation && consolidation.merges.length > 0 && (
+              <div className="text-xs">Merged: {describeMerges(consolidation)}</div>
             )}
             {sim.notes[0] && <div className="text-muted-foreground text-xs">{sim.notes[0]}</div>}
           </div>

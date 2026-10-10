@@ -6,6 +6,7 @@ import { AIUnavailableError, mapWithConcurrency, modelFor } from "@/lib/ai/claud
 import { classifyWithRules } from "@/lib/ai/rules/classifier";
 import type { Channel } from "@/lib/constants";
 import { sql } from "@/lib/db/client";
+import { listActiveIssueCodes } from "@/lib/db/issues";
 import { writeAudit } from "@/lib/db/audit";
 import { aiConfigured } from "@/lib/env";
 import type { Bank } from "@/types";
@@ -118,9 +119,7 @@ export async function getChallengeReport(bankId: string): Promise<ChallengeRepor
 
 /** Classifies the challenge set with the AI (fast tier) and stores the run. */
 export async function runChallengeEvaluation(bank: Bank, actor: string): Promise<ChallengeReport> {
-  const knownCodes = (
-    await sql<{ issue_code: string }[]>`select issue_code from issues where bank_id = ${bank.id}`
-  ).map((r) => r.issue_code);
+  const knownCodes = await listActiveIssueCodes(bank.id);
   const inputs: PendingInteraction[] = CHALLENGE_SET.map((c) => ({
     id: c.id,
     channel: c.channel,

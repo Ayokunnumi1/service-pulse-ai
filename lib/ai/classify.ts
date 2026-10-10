@@ -1,6 +1,7 @@
 import "server-only";
 import type { Channel } from "@/lib/constants";
 import { sql } from "@/lib/db/client";
+import { listActiveIssueCodes } from "@/lib/db/issues";
 import { writeAudit } from "@/lib/db/audit";
 import { aiConfigured } from "@/lib/env";
 import { forAI } from "@/lib/utils/sanitize";
@@ -147,9 +148,7 @@ export async function classifyPending(
     return { processed: 0, aiCount: 0, rulesCount: 0, remaining: 0, aiAvailable: useAI, notes: [] };
   }
 
-  const knownCodes = (await sql<{ issue_code: string }[]>`select issue_code from issues where bank_id = ${bankId}`).map(
-    (r) => r.issue_code,
-  );
+  const knownCodes = await listActiveIssueCodes(bankId);
 
   const batches: PendingInteraction[][] = [];
   for (let i = 0; i < pending.length; i += BATCH_SIZE) batches.push(pending.slice(i, i + BATCH_SIZE));

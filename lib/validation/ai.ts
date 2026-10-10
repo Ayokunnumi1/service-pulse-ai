@@ -126,6 +126,22 @@ export const ValidatedTeamRecommendationSchema = AITeamRecommendationSchema.exte
 export type TeamRecommendationResult = z.infer<typeof ValidatedTeamRecommendationSchema>;
 
 // ---------------------------------------------------------------------------
+// Issue-group consolidation
+// ---------------------------------------------------------------------------
+export const AIConsolidationSchema = z.object({
+  decisions: z.array(
+    z.object({
+      code: z.string().describe("The candidate group's code exactly as supplied."),
+      action: z.enum(["MERGE", "KEEP"]),
+      target_code: z.string().nullable().describe("For MERGE: the code of the group to merge into. Null for KEEP."),
+      reason: z.string(),
+      confidence: z.number().describe("0 to 1"),
+    }),
+  ),
+});
+export type ConsolidationDecision = z.infer<typeof AIConsolidationSchema>["decisions"][number];
+
+// ---------------------------------------------------------------------------
 // Ask ServicePulse (management assistant)
 // ---------------------------------------------------------------------------
 export const AIAssistantAnswerSchema = z.object({
