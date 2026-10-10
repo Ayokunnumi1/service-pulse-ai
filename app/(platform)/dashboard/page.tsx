@@ -40,11 +40,18 @@ export default async function DashboardPage() {
     color: title === "Other" ? OTHER_COLOR : issueColor(issueCodeByTitle.get(title) ?? ""),
   }));
 
-  const departments = new Map<string, number>();
+  // Teams roll up into their department; unowned issues keep their bucket ("No clear owner" / "Not yet analysed").
+  const departments = new Map<string, { value: number; unowned: boolean }>();
   for (const o of owners) {
-    const key = o.department ?? "Unassigned";
-    departments.set(key, (departments.get(key) ?? 0) + o.issues);
+    const key = o.kind === "TEAM" ? (o.department ?? o.name) : o.name;
+    const entry = departments.get(key) ?? { value: 0, unowned: o.kind !== "TEAM" };
+    entry.value += o.issues;
+    departments.set(key, entry);
   }
+  const departmentItems = [...departments.entries()]
+    .sort((a, b) => Number(a[1].unowned) - Number(b[1].unowned) || b[1].value - a[1].value)
+    .map(([name, { value, unowned }]) => ({ name, value, href: unowned ? "/issues" : "/teams" }));
+  const criticalNote = (n: number) => (n > 0 ? `(${n} critical)` : undefined);
 
   return (
     <>
@@ -148,13 +155,10 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Issues by department</CardTitle>
-            <CardDescription>Active issues by assigned or recommended owner</CardDescription>
+            <CardDescription>Significant issues by assigned or recommended owner</CardDescription>
           </CardHeader>
           <CardContent>
-            <BarList
-              items={[...departments.entries()].sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }))}
-              emptyLabel="No active issues"
-            />
+            <BarList items={departmentItems} emptyLabel="No significant issues" />
           </CardContent>
         </Card>
       </div>
@@ -176,14 +180,17 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Issues by team</CardTitle>
-            <CardDescription>Active issues per owning team (significant in brackets)</CardDescription>
+            <CardDescription>Significant issues per owning team</CardDescription>
           </CardHeader>
           <CardContent>
             <BarList
-              items={owners
-                .slice(0, 8)
-                .map((o) => ({ name: o.name, value: o.issues, secondary: `(${o.significant})`, href: "/teams" }))}
-              emptyLabel="No active issues"
+              items={owners.slice(0, 8).map((o) => ({
+                name: o.name,
+                value: o.issues,
+                secondary: criticalNote(o.critical),
+                href: o.kind === "TEAM" ? "/teams" : "/issues",
+              }))}
+              emptyLabel="No significant issues"
             />
           </CardContent>
         </Card>

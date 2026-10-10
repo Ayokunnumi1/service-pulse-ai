@@ -128,39 +128,59 @@ export async function getTrendSeries(bankId: string, weeks = 8, topN = 5) {
   };
 }
 
+export type OwnerKind = "TEAM" | "NO_CLEAR_OWNER" | "NOT_ANALYSED";
+
 export interface OwnerCount {
-  name: string;
+  kind: OwnerKind;
+  name: string; // team name, or the bucket label for unowned issues
   department: string | null;
   issues: number;
-  significant: number;
   critical: number;
   complaints: number;
 }
 
-/** Active issues per owning team: assigned team, else latest AI recommendation. */
+export const OWNER_BUCKET_LABELS: Record<Exclude<OwnerKind, "TEAM">, string> = {
+  NO_CLEAR_OWNER: "No clear owner",
+  NOT_ANALYSED: "Not yet analysed",
+};
+
+/**
+ * Significant active issues (same rule as the early-warning alerts: emerging
+ * or faster growth, or high/critical risk) per owner — the assigned team, else
+ * the latest recommended team. Unowned issues are split by why they have no
+ * owner: analysed but no team covers them, or not analysed yet.
+ */
 export async function getIssuesByOwner(bankId: string): Promise<OwnerCount[]> {
   return sql<OwnerCount[]>`
     with owners as (
-      select s.id, s.risk_level, s.trend_status, s.current_period_count,
-             coalesce(s.assigned_team_id, a.primary_team_id) as team_id
+      select s.id, s.risk_level, s.current_period_count,
+             coalesce(s.assigned_team_id, a.primary_team_id) as team_id,
+             a.id as analysis_id
       from issues s
       left join lateral (
-        select x.primary_team_id from issue_analyses x
+        select x.id, x.primary_team_id from issue_analyses x
         where x.issue_id = s.id and x.bank_id = s.bank_id
         order by x.created_at desc limit 1
       ) a on true
       where s.bank_id = ${bankId} and s.status <> 'RESOLVED' and s.total_complaints > 0
+        and (s.trend_status in ('EMERGING', 'HIGH_CONCERN', 'CRITICAL') or s.risk_level in ('HIGH', 'CRITICAL'))
     )
-    select coalesce(t.name, 'Unassigned / not yet analysed') as name, d.name as department,
-           count(*)::int as issues,
-           count(*) filter (where o.trend_status in ('EMERGING', 'HIGH_CONCERN', 'CRITICAL'))::int as significant,
-           count(*) filter (where o.risk_level = 'CRITICAL')::int as critical,
-           coalesce(sum(o.current_period_count), 0)::int as complaints
+    select
+      case when t.id is not null then 'TEAM'
+           when o.analysis_id is not null then 'NO_CLEAR_OWNER'
+           else 'NOT_ANALYSED' end as kind,
+      coalesce(t.name, case when o.analysis_id is not null
+                            then ${OWNER_BUCKET_LABELS.NO_CLEAR_OWNER}
+                            else ${OWNER_BUCKET_LABELS.NOT_ANALYSED} end) as name,
+      d.name as department,
+      count(*)::int as issues,
+      count(*) filter (where o.risk_level = 'CRITICAL')::int as critical,
+      coalesce(sum(o.current_period_count), 0)::int as complaints
     from owners o
     left join teams t on t.id = o.team_id and t.bank_id = ${bankId}
     left join departments d on d.id = t.department_id and d.bank_id = ${bankId}
-    group by 1, 2
-    order by significant desc, issues desc`;
+    group by 1, 2, 3
+    order by min(case when t.id is null then 1 else 0 end), count(*) desc, 5 desc`;
 }
 
 export interface TeamImpactRow {
