@@ -44,12 +44,12 @@ export interface SeedBank {
   branches: SeedBranch[];
 }
 
-export const KESTREL: SeedBank = {
-  slug: "kestrel-trust",
-  name: "Kestrel Trust Bank",
-  brand: "Kestrel",
-  handle: "@KestrelTrustNG",
-  description: "Fictional tier-1 commercial bank with a large retail and digital customer base (demo data).",
+export const ZENITH: SeedBank = {
+  slug: "zenith-bank",
+  name: "Zenith Bank Plc",
+  brand: "Zenith Bank",
+  handle: "@ZenithBank",
+  description: "Tier-1 commercial bank and premier financial institution in Nigeria (Retail, Corporate, Z-Mobile, *966# USSD).",
   products: [
     "MOBILE_BANKING",
     "INTERNET_BANKING",
@@ -301,12 +301,12 @@ export const KESTREL: SeedBank = {
   ],
 };
 
-export const HARBOURLINE: SeedBank = {
-  slug: "harbourline",
-  name: "Harbourline Bank",
-  brand: "Harbourline",
-  handle: "@HarbourlineBank",
-  description: "Fictional mid-sized retail bank with a USSD-heavy customer base (demo data).",
+export const GTBANK: SeedBank = {
+  slug: "gtbank",
+  name: "Guaranty Trust Bank (GTCO)",
+  brand: "GTBank",
+  handle: "@gtbank_help",
+  description: "Tier-1 commercial banking group operating *737# USSD, GTWorld, and omni-channel retail banking.",
   products: [
     "MOBILE_BANKING",
     "USSD_BANKING",
@@ -414,4 +414,62 @@ export const HARBOURLINE: SeedBank = {
   ],
 };
 
-export const SEED_BANKS: SeedBank[] = [KESTREL, HARBOURLINE];
+export const ACCESS: SeedBank = {
+  slug: "access-bank",
+  name: "Access Bank Plc",
+  brand: "Access Bank",
+  handle: "@accessbank_help",
+  description: "Pan-African commercial bank operating *901# USSD, AccessMore app, and nationwide retail branches.",
+  products: [
+    "MOBILE_BANKING",
+    "USSD_BANKING",
+    "DEBIT_CARD",
+    "ATM",
+    "SAVINGS_ACCOUNT",
+    "CURRENT_ACCOUNT",
+    "BRANCH_SERVICES",
+  ],
+  departments: [
+    {
+      name: "Digital Channels",
+      description: "Digital banking platforms and support.",
+      teams: [
+        {
+          name: "Mobile & USSD Team",
+          description: "USSD *901# and AccessMore mobile app.",
+          responsibilities: ["*901# USSD service", "AccessMore application", "mobile token service"],
+          products: ["USSD_BANKING", "MOBILE_BANKING"],
+        },
+      ],
+    },
+    {
+      name: "Settlements & Disputes",
+      description: "Transaction arbitration and reversal desk.",
+      teams: [
+        {
+          name: "Dispute Operations",
+          description: "POS chargebacks and ATM dispense reconciliations.",
+          responsibilities: ["ATM dispense errors", "POS payment issues", "interbank reversals"],
+          products: ["DEBIT_CARD", "ATM", "CURRENT_ACCOUNT"],
+        },
+      ],
+    },
+  ],
+  systems: [
+    { name: "Flexcube Core Banking", description: "Ledger and accounts.", product: "CURRENT_ACCOUNT", ownerTeam: "Dispute Operations" },
+    { name: "AccessMore Mobile Engine", description: "Mobile platform.", product: "MOBILE_BANKING", ownerTeam: "Mobile & USSD Team" },
+    { name: "*901# USSD Gateway", description: "Telco switch.", product: "USSD_BANKING", ownerTeam: "Mobile & USSD Team" },
+  ],
+  branches: [
+    { code: "ACC-DAN", name: "Danmole, VI", city: "Lagos", region: "South West" },
+    { code: "ACC-APA", name: "Commercial Rd, Apapa", city: "Lagos", region: "South West" },
+    { code: "ACC-WUS", name: "Wuse 2", city: "Abuja", region: "North Central" },
+    { code: "ACC-GAR", name: "Garrison", city: "Port Harcourt", region: "South South" },
+  ],
+};
+
+// Aliases for backwards compatibility
+export const KESTREL = ZENITH;
+export const HARBOURLINE = GTBANK;
+
+export const SEED_BANKS: SeedBank[] = [ZENITH, GTBANK, ACCESS];

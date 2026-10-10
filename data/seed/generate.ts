@@ -16,47 +16,64 @@ interface VolumePlan {
   hotspots?: { branchCodes: string[]; currentWeekShare: number };
 }
 
+const ZENITH_PLAN: VolumePlan[] = [
+  { scenario: "transfer", weekly: [22, 24, 23, 26, 28, 30, 40, 58] }, // +45% → Emerging
+  { scenario: "mobileAuth", weekly: [8, 9, 7, 10, 9, 11, 14, 36] }, // +157% → Critical
+  { scenario: "cardPayment", weekly: [10, 12, 11, 13, 12, 14, 18, 30] }, // +67% → High concern
+  {
+    scenario: "atm",
+    weekly: [12, 13, 12, 14, 13, 15, 17, 21], // +24% → Watch
+    hotspots: { branchCodes: ["LAG-IKJ", "ABJ-WUS"], currentWeekShare: 0.6 },
+  },
+  {
+    scenario: "branchDelay",
+    weekly: [10, 11, 10, 12, 11, 12, 14, 19], // +36% → Emerging
+    hotspots: { branchCodes: ["LAG-LEK", "PHC-TAM"], currentWeekShare: 0.65 },
+  },
+  { scenario: "ussd", weekly: 5 },
+  { scenario: "charges", weekly: 6 },
+  { scenario: "fraud", weekly: 2 },
+  { scenario: "statement", weekly: 8 },
+  { scenario: "accountUpdate", weekly: 7 },
+  { scenario: "cardRequest", weekly: 6 },
+  { scenario: "loan", weekly: 6 },
+  { scenario: "feedback", weekly: 6 },
+];
+
+const GTBANK_PLAN: VolumePlan[] = [
+  { scenario: "ussd", weekly: [3, 4, 3, 4, 5, 4, 6, 14] }, // +133% → Critical
+  { scenario: "transfer", weekly: [6, 7, 6, 7, 6, 7, 8, 8] }, // 0% → Stable
+  { scenario: "cardPayment", weekly: [3, 3, 4, 3, 4, 3, 4, 5] }, // +25% → Watch
+  { scenario: "atm", weekly: [2, 2, 3, 2, 3, 2, 3, 3] },
+  {
+    scenario: "branchDelay",
+    weekly: [2, 3, 2, 3, 2, 3, 3, 6], // +100% → High concern
+    hotspots: { branchCodes: ["GT-VIC"], currentWeekShare: 0.7 },
+  },
+  { scenario: "mobileAuth", weekly: 1 },
+  { scenario: "charges", weekly: 2 },
+  { scenario: "statement", weekly: 3 },
+  { scenario: "accountUpdate", weekly: 2 },
+  { scenario: "loan", weekly: 2 },
+  { scenario: "feedback", weekly: 2 },
+];
+
+const ACCESS_PLAN: VolumePlan[] = [
+  { scenario: "transfer", weekly: [8, 9, 8, 10, 9, 11, 15, 24] },
+  { scenario: "cardPayment", weekly: [5, 6, 5, 7, 6, 8, 10, 18] },
+  { scenario: "atm", weekly: [4, 4, 5, 4, 5, 6, 8, 12] },
+  { scenario: "ussd", weekly: 4 },
+  { scenario: "mobileAuth", weekly: 3 },
+  { scenario: "charges", weekly: 3 },
+  { scenario: "branchDelay", weekly: 4 },
+];
+
 export const VOLUME_PLANS: Record<string, VolumePlan[]> = {
-  "kestrel-trust": [
-    { scenario: "transfer", weekly: [22, 24, 23, 26, 28, 30, 40, 58] }, // +45% → Emerging
-    { scenario: "mobileAuth", weekly: [8, 9, 7, 10, 9, 11, 14, 36] }, // +157% → Critical
-    { scenario: "cardPayment", weekly: [10, 12, 11, 13, 12, 14, 18, 30] }, // +67% → High concern
-    {
-      scenario: "atm",
-      weekly: [12, 13, 12, 14, 13, 15, 17, 21], // +24% → Watch
-      hotspots: { branchCodes: ["LAG-IKJ", "ABJ-WUS"], currentWeekShare: 0.6 },
-    },
-    {
-      scenario: "branchDelay",
-      weekly: [10, 11, 10, 12, 11, 12, 14, 19], // +36% → Emerging
-      hotspots: { branchCodes: ["LAG-LEK", "PHC-TAM"], currentWeekShare: 0.65 },
-    },
-    { scenario: "ussd", weekly: 5 },
-    { scenario: "charges", weekly: 6 },
-    { scenario: "fraud", weekly: 2 },
-    { scenario: "statement", weekly: 8 },
-    { scenario: "accountUpdate", weekly: 7 },
-    { scenario: "cardRequest", weekly: 6 },
-    { scenario: "loan", weekly: 6 },
-    { scenario: "feedback", weekly: 6 },
-  ],
-  harbourline: [
-    { scenario: "ussd", weekly: [3, 4, 3, 4, 5, 4, 6, 14] }, // +133% → Critical
-    { scenario: "transfer", weekly: [6, 7, 6, 7, 6, 7, 8, 8] }, // 0% → Stable
-    { scenario: "cardPayment", weekly: [3, 3, 4, 3, 4, 3, 4, 5] }, // +25% → Watch
-    { scenario: "atm", weekly: [2, 2, 3, 2, 3, 2, 3, 3] },
-    {
-      scenario: "branchDelay",
-      weekly: [2, 3, 2, 3, 2, 3, 3, 6], // +100% → High concern
-      hotspots: { branchCodes: ["HB-SUR"], currentWeekShare: 0.7 },
-    },
-    { scenario: "mobileAuth", weekly: 1 },
-    { scenario: "charges", weekly: 2 },
-    { scenario: "statement", weekly: 3 },
-    { scenario: "accountUpdate", weekly: 2 },
-    { scenario: "loan", weekly: 2 },
-    { scenario: "feedback", weekly: 2 },
-  ],
+  "zenith-bank": ZENITH_PLAN,
+  gtbank: GTBANK_PLAN,
+  "access-bank": ACCESS_PLAN,
+  "kestrel-trust": ZENITH_PLAN,
+  harbourline: GTBANK_PLAN,
 };
 
 export interface GeneratedInteraction {

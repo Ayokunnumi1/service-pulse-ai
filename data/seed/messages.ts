@@ -209,11 +209,22 @@ export const SCENARIOS: Record<string, Scenario> = {
 };
 
 export const MERCHANTS = [
-  "Mega Mart",
-  "FreshCart",
-  "QuickFuel station",
-  "Sunrise Pharmacy",
-  "an online store",
-  "CityMall",
+  "Ebeano Supermarket",
+  "Shoprite Ikeja",
+  "TotalEnergies Fuel Station",
+  "Medplus Pharmacy",
+  "Jumia Nigeria",
+  "Slot Systems",
+  "Chowdeck",
 ];
-export const RECIPIENT_BANKS = ["Opal Bank", "Crestline Bank", "Sable MFB", "Granite Bank", "another bank"];
+export const RECIPIENT_BANKS = [
+  "GTBank",
+  "Access Bank",
+  "FirstBank",
+  "UBA",
+  "Kuda Bank",
+  "OPay",
+  "Palmpay",
+  "Moniepoint",
+  "Stanbic IBTC",
+];

@@ -18,11 +18,11 @@ const NAV = [
 export function Sidebar({ alertCount }: { alertCount: number }) {
   const pathname = usePathname();
   return (
-    <aside className="bg-sidebar text-sidebar-foreground hidden w-64 shrink-0 flex-col lg:flex">
-      <div className="px-5 py-5">
+    <aside className="bg-sidebar/95 text-sidebar-foreground hidden w-64 shrink-0 flex-col border-r border-sidebar-border/50 shadow-2xl backdrop-blur-2xl lg:flex relative z-10">
+      <div className="px-5 py-5 border-b border-sidebar-border/30">
         <Logo inverted />
       </div>
-      <nav className="flex-1 space-y-0.5 px-3 py-2">
+      <nav className="flex-1 space-y-1 px-3 py-3">
         {NAV.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -30,16 +30,16 @@ export function Sidebar({ alertCount }: { alertCount: number }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                  ? "bg-sidebar-accent/90 text-sidebar-accent-foreground font-medium shadow-sm border border-white/5 ring-1 ring-[var(--sidebar-primary)]/20"
+                  : "hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground hover:translate-x-0.5",
               )}
             >
-              <item.icon className={cn("size-4", active && "text-[var(--sidebar-primary)]")} />
+              <item.icon className={cn("size-4 transition-transform", active && "text-[var(--sidebar-primary)] scale-110")} />
               <span className="flex-1">{item.label}</span>
               {item.href === "/issues" && alertCount > 0 && (
-                <span className="tabular rounded-full bg-[var(--status-critical)] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                <span className="tabular rounded-full bg-[var(--status-critical)] px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-xs animate-pulse">
                   {alertCount}
                 </span>
               )}

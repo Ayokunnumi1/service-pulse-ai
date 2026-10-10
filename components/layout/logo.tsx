@@ -17,7 +17,7 @@ export function Logo({ className, inverted }: { className?: string; inverted?: b
             inverted ? "text-sidebar-foreground/70" : "text-muted-foreground",
           )}
         >
-          Early-warning intelligence
+          SLA Operations
         </div>
       </div>
     </div>

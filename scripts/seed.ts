@@ -102,7 +102,8 @@ async function seedBank(bank: SeedBank, anchor: Date) {
 
 async function main() {
   const anchor = new Date();
-  console.log("Seeding fictional banks…");
+  console.log("Seeding Nigerian commercial banks…");
+  await sql`delete from banks where slug in ('kestrel-trust', 'harbourline')`;
   for (const bank of SEED_BANKS) {
     await seedBank(bank, anchor);
   }

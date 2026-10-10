@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { BrainCircuit, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -76,7 +76,7 @@ export function ClassifyButton({ pending, size = "default" }: { pending: number;
 
   return (
     <Button onClick={run} disabled={pending === 0} size={size}>
-      <Sparkles />
+      <ShieldAlert />
       {pending > 0 ? `Classify ${pending.toLocaleString()} pending` : "All interactions classified"}
     </Button>
   );

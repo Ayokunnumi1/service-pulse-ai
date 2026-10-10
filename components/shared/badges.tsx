@@ -7,7 +7,7 @@ import {
   Minus,
   OctagonAlert,
   Search,
-  Sparkles,
+  Activity,
   TrendingUp,
   TriangleAlert,
 } from "lucide-react";
@@ -62,7 +62,7 @@ function Chip({
     <span
       title={title}
       className={cn(
-        "text-foreground inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium whitespace-nowrap ring-1 ring-inset",
+        "text-foreground inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap shadow-xs backdrop-blur-md ring-1 ring-inset transition-all duration-200 hover:shadow-sm",
         TONE[tone].chip,
         className,
       )}
@@ -159,7 +159,7 @@ export function SeverityBadge({ severity }: { severity: string | null }) {
 export function MethodBadge({ method, model }: { method: "AI" | "RULES" | null; model?: string | null }) {
   if (!method) return null;
   return method === "AI" ? (
-    <Chip tone="info" icon={Sparkles} title={model ? `Model: ${model}` : undefined}>
+    <Chip tone="info" icon={Activity} title={model ? `Model: ${model}` : undefined}>
       AI
     </Chip>
   ) : (

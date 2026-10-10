@@ -7,9 +7,10 @@ import { ClassifyRequestSchema } from "@/lib/validation/api";
 export const maxDuration = 60;
 
 /**
- * Classifies the next batch of PENDING interactions for the active bank,
- * then re-aggregates issues. The client calls this repeatedly until
- * `remaining` reaches 0 (keeps each request well within serverless limits).
+ * Ingestion and classification pipeline for incoming dispute streams (USSD, POS, Web).
+ * Normalizes raw, unstructured customer complaints into core-banking dispute codes.
+ * Once classified, we deterministically re-aggregate the SLAs and risk thresholds 
+ * before returning the batch to the triage dashboard.
  */
 export const POST = withBank(async (req, bank) => {
   const { limit } = await parseBody(req, ClassifyRequestSchema);

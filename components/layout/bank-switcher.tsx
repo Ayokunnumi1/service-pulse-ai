@@ -26,8 +26,8 @@ export function BankSwitcher({ banks, currentId }: { banks: { id: string; name: 
 
   return (
     <Select value={currentId} onValueChange={onChange} disabled={pending}>
-      <SelectTrigger className="bg-card w-60" aria-label="Financial institution">
-        <Building2 className="text-muted-foreground size-4" />
+      <SelectTrigger className="liquid-glass w-64 rounded-full font-semibold shadow-xs border border-white/30 text-sm cursor-pointer" aria-label="Financial institution">
+        <Building2 className="text-primary size-4" />
         <SelectValue>{current?.name}</SelectValue>
       </SelectTrigger>
       <SelectContent>
