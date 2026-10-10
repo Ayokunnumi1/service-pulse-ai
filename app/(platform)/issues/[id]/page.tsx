@@ -15,6 +15,7 @@ import { notFound } from "next/navigation";
 import { BarList } from "@/components/charts/bar-list";
 import { WeeklyBars } from "@/components/charts/weekly-bars";
 import { AuditTimeline } from "@/components/issues/audit-timeline";
+import { EvidenceList } from "@/components/issues/evidence-list";
 import { AnalyzeIssueButton, AssignmentControls, NoteForm, StatusControls } from "@/components/issues/issue-actions";
 import { RiskBreakdown } from "@/components/issues/risk-breakdown";
 import { ConfidenceMeter, IssueStatusBadge, MethodBadge, RiskBadge, TrendBadge } from "@/components/shared/badges";
@@ -25,7 +26,14 @@ import { requireBank } from "@/lib/bank-context";
 import { CATEGORY_LABELS, CHANNEL_LABELS, humanize, type Category, type Channel } from "@/lib/constants";
 import { listAudit } from "@/lib/db/audit";
 import { listTeams } from "@/lib/db/directory";
-import { getCustomerSignals, getIssue, getIssueWeeklyTrend, listAnalyses, listNotes } from "@/lib/db/issues";
+import {
+  getCustomerSignals,
+  getEvidenceMessages,
+  getIssue,
+  getIssueWeeklyTrend,
+  listAnalyses,
+  listNotes,
+} from "@/lib/db/issues";
 import { trendExplanation } from "@/lib/scoring/trend";
 import { formatDate, formatDateTime, formatGrowth, formatMoney, formatNumber, formatPct } from "@/lib/utils/format";
 import { uuid } from "@/lib/validation/api";
@@ -54,6 +62,14 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
     issue.period_end ? getIssueWeeklyTrend(bank.id, issue.issue_code, issue.period_end) : Promise.resolve([]),
   ]);
   const analysis = analyses[0] ?? null;
+  const evidence = analysis?.evidence ?? [];
+  const evidenceMessages = await getEvidenceMessages(
+    bank.id,
+    evidence.map((e) => e.interaction_id),
+  );
+  const supporting = evidence.filter((e) => e.role === "ROOT_CAUSE");
+  const counter = evidence.filter((e) => e.role === "COUNTER");
+  const citedIds = new Set(supporting.map((e) => e.interaction_id));
   const canAccept = analysis?.ownership_status === "RECOMMENDED" && Boolean(analysis.primary_team_id);
 
   return (
@@ -199,6 +215,9 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
                   <li key={s.id} className="border-l-2 border-[var(--series-1)]/40 pl-3">
                     <p className="text-sm">&ldquo;{s.message}&rdquo;</p>
                     <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
+                      {citedIds.has(s.id) && (
+                        <span className="font-medium text-[var(--series-1)]">Cited as root-cause evidence</span>
+                      )}
                       <span>{CHANNEL_LABELS[s.channel as Channel] ?? s.channel}</span>
                       {(s.branch || s.location) && <span>{[s.branch, s.location].filter(Boolean).join(", ")}</span>}
                       <span className="font-mono">{s.issue}</span>
@@ -244,6 +263,14 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
                     </div>
                     <p className="mt-2 text-base font-medium">{analysis.likely_root_cause}</p>
                   </div>
+                  {supporting.length > 0 && (
+                    <div>
+                      <SectionLabel>Supporting evidence — customer complaints behind this hypothesis</SectionLabel>
+                      <div className="mt-2">
+                        <EvidenceList links={supporting} messages={evidenceMessages} />
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <SectionLabel>Observed pattern</SectionLabel>
                     <p className="mt-1 text-sm">{analysis.observed_pattern}</p>
@@ -252,13 +279,26 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
                     <div>
                       <SectionLabel>Possible contributing factors / alternatives</SectionLabel>
                       <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
-                        {analysis.alternative_causes.map((c) => (
+                        {analysis.alternative_causes.map((c, i) => (
                           <li key={c.description}>
                             {c.description}{" "}
                             <span className="text-muted-foreground text-xs">({humanize(c.likelihood)})</span>
+                            <EvidenceList
+                              links={evidence.filter((e) => e.role === "ALTERNATIVE" && e.alternative_index === i)}
+                              messages={evidenceMessages}
+                              compact
+                            />
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+                  {counter.length > 0 && (
+                    <div>
+                      <SectionLabel>Doesn&apos;t fit the hypothesis — check before concluding</SectionLabel>
+                      <div className="mt-2">
+                        <EvidenceList links={counter} messages={evidenceMessages} tone="counter" />
+                      </div>
                     </div>
                   )}
                   <div className="grid gap-5 md:grid-cols-2">

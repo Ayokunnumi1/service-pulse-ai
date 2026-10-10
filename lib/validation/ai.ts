@@ -58,6 +58,11 @@ export type ClassificationResult = z.infer<typeof ValidatedClassificationSchema>
 // ---------------------------------------------------------------------------
 export const ROOT_CAUSE_STATUSES = ["LIKELY", "POSSIBLE", "REQUIRES_INVESTIGATION"] as const;
 
+const EvidenceCitationSchema = z.object({
+  ref: z.string().describe("A sample_customer_messages ref, e.g. E3."),
+  why: z.string().describe("One short sentence: what in this message points to the conclusion."),
+});
+
 export const AIRootCauseSchema = z.object({
   issue_name: z.string(),
   observed_pattern: z.string().describe("What the evidence shows, quoting the supplied figures only."),
@@ -65,13 +70,18 @@ export const AIRootCauseSchema = z.object({
     description: z.string().describe("Likely root cause — phrased as a hypothesis, never as confirmed fact."),
     confidence: z.number().describe("0 to 1"),
     status: z.enum(ROOT_CAUSE_STATUSES),
+    evidence: z.array(EvidenceCitationSchema).describe("2–4 customer messages that support the hypothesis."),
   }),
   alternative_causes: z.array(
     z.object({
       description: z.string(),
       likelihood: z.enum(["POSSIBLE", "LESS_LIKELY"]),
+      evidence_refs: z.array(z.string()).describe("0–2 refs of messages that fit this alternative better."),
     }),
   ),
+  counter_evidence: z
+    .array(EvidenceCitationSchema)
+    .describe("0–2 messages that do not fit the likely root cause; [] if all fit."),
   affected_systems: z.array(z.string()),
   recommended_investigation: z.array(z.string()),
   management_insight: z.string().describe("One or two sentences for executives."),
@@ -81,7 +91,9 @@ export const ValidatedRootCauseSchema = AIRootCauseSchema.extend({
   root_cause: AIRootCauseSchema.shape.root_cause.extend({
     description: z.string().min(5),
     confidence: z.number().min(0).max(1),
+    evidence: z.array(EvidenceCitationSchema).max(8),
   }),
+  counter_evidence: z.array(EvidenceCitationSchema).max(5),
   alternative_causes: AIRootCauseSchema.shape.alternative_causes.max(5),
   affected_systems: z.array(z.string().min(1)).max(8),
   recommended_investigation: z.array(z.string().min(1)).max(8),

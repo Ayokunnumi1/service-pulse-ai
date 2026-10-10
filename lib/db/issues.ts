@@ -59,7 +59,7 @@ const analysisColumns = () => sql`
   a.root_cause_confidence, a.alternative_causes, a.affected_systems, a.recommended_investigation,
   a.management_insight, a.ownership_status, a.primary_department_id, d.name as primary_department_name,
   a.primary_team_id, t.name as primary_team_name, a.primary_team_confidence, a.secondary_teams,
-  a.ownership_reason, a.recommended_action, a.validation_notes, a.created_at`;
+  a.ownership_reason, a.recommended_action, a.validation_notes, a.evidence, a.created_at`;
 
 export async function listAnalyses(bankId: string, issueId: string): Promise<IssueAnalysis[]> {
   return sql<IssueAnalysis[]>`
@@ -196,4 +196,23 @@ export async function listActiveIssueCodes(bankId: string): Promise<string[]> {
   const rows = await sql<{ issue_code: string }[]>`
     select issue_code from issues where bank_id = ${bankId} and total_complaints > 0`;
   return rows.map((r) => r.issue_code);
+}
+
+export interface EvidenceMessage {
+  id: string;
+  message: string;
+  channel: string;
+  location: string | null;
+  branch: string | null;
+  customer_reference: string | null;
+  occurred_at: Date;
+}
+
+/** Interactions cited as evidence by an analysis (bank-scoped). */
+export async function getEvidenceMessages(bankId: string, ids: string[]): Promise<Map<string, EvidenceMessage>> {
+  if (ids.length === 0) return new Map();
+  const rows = await sql<EvidenceMessage[]>`
+    select id, message, channel, location, branch, customer_reference, occurred_at
+    from interactions where bank_id = ${bankId} and id = any(${ids})`;
+  return new Map(rows.map((r) => [r.id, r]));
 }

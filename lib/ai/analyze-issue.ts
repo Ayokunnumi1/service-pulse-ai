@@ -19,6 +19,7 @@ import { TEAM_RECOMMENDATION_SYSTEM_PROMPT, teamRecommendationUserPrompt } from 
 import type { Bank } from "@/types";
 import { AIUnavailableError, structuredCompletion } from "./claude";
 import { recommendedActionFor, rootCauseWithRules } from "./rules/root-cause";
+import { evidenceRef, resolveEvidence, rulesEvidence, type EvidenceLink } from "./evidence";
 import { recommendTeamWithRules } from "./rules/team-matcher";
 import { validateTeamRecommendation, type DirectoryEntry, type ValidatedOwnership } from "./team-validation";
 
@@ -69,7 +70,14 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
     affected_locations: issue.location_breakdown.slice(0, 6),
     affected_branches: issue.branch_breakdown.slice(0, 6),
     specific_issue_labels: labels,
-    sample_customer_messages: signals.map((s) => ({ channel: s.channel, message: forAI(s.message, 300) })),
+    sample_customer_messages: signals.map((s, i) => ({
+      ref: evidenceRef(i),
+      channel: s.channel,
+      location: s.branch ? `${s.branch}, ${s.location ?? ""}`.replace(/, $/, "") : s.location,
+      specific_issue: s.issue,
+      received: new Date(s.occurred_at).toISOString().slice(0, 10),
+      message: forAI(s.message, 300),
+    })),
     known_systems: systems,
   };
 
@@ -107,6 +115,23 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
   } else {
     notes.push("AI not configured; rules-based root-cause hypothesis used.");
     rootCause = rootCauseWithRules(evidence);
+  }
+
+  // ---- 1b. Evidence links: validate the cited refs against the supplied messages
+  let evidenceLinks: EvidenceLink[];
+  if (rcaMethod === "AI") {
+    const { links, dropped } = resolveEvidence(
+      rootCause,
+      signals.map((s) => s.id),
+    );
+    evidenceLinks = links;
+    if (dropped > 0) notes.push(`${dropped} evidence reference(s) did not match a supplied message and were dropped.`);
+    if (!links.some((l) => l.role === "ROOT_CAUSE")) {
+      evidenceLinks = [...rulesEvidence(signals, labels[0]?.name ?? null), ...links];
+      notes.push("The AI cited no valid supporting messages; representative complaints attached instead.");
+    }
+  } else {
+    evidenceLinks = rulesEvidence(signals, labels[0]?.name ?? null);
   }
 
   // ---- 2. Responsible-team recommendation -------------------------------
@@ -213,16 +238,17 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
         root_cause_confidence, alternative_causes, affected_systems, recommended_investigation,
         management_insight, ownership_status, primary_department_id, primary_team_id,
         primary_team_confidence, secondary_teams, ownership_reason, recommended_action,
-        validation_notes, input_snapshot
+        validation_notes, input_snapshot, evidence
       ) values (
         ${bank.id}, ${issue.id}, ${method}, ${model}, ${rootCause.observed_pattern},
         ${rootCause.root_cause.description}, ${rootCause.root_cause.status}, ${rootCause.root_cause.confidence},
-        ${tx.json(rootCause.alternative_causes as never)}, ${tx.json(rootCause.affected_systems as never)},
+        ${tx.json(rootCause.alternative_causes.map(({ description, likelihood }) => ({ description, likelihood })) as never)}, ${tx.json(rootCause.affected_systems as never)},
         ${tx.json(rootCause.recommended_investigation as never)}, ${rootCause.management_insight},
         ${ownership.status}, ${primary?.department_id || null}, ${primary?.team_id ?? null},
         ${primary?.confidence ?? null},
         ${tx.json(secondary.map((s) => ({ team_id: s.team_id, team_name: s.team_name, reason: s.reason })) as never)},
-        ${reason || null}, ${action}, ${tx.json(notes as never)}, ${tx.json(inputSnapshot as never)}
+        ${reason || null}, ${action}, ${tx.json(notes as never)}, ${tx.json(inputSnapshot as never)},
+        ${tx.json(evidenceLinks as never)}
       )
       returning id`;
 
@@ -239,7 +265,10 @@ export async function analyzeIssue(bank: Bank, issueId: string, actor: string): 
         rootCause: `${rootCause.root_cause.status}: ${rootCause.root_cause.description}`,
         confidence: rootCause.root_cause.confidence,
         finalStatus: issue.status,
-        details: { analysis_id: row!.id },
+        details: {
+          analysis_id: row!.id,
+          evidence_interaction_ids: evidenceLinks.filter((l) => l.role === "ROOT_CAUSE").map((l) => l.interaction_id),
+        },
       },
       tx,
     );

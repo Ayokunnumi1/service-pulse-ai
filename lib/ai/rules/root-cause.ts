@@ -232,8 +232,14 @@ export function rootCauseWithRules(evidence: IssueEvidence): RootCauseResult {
       description: template.likely,
       confidence: template.confidence,
       status: t ? "LIKELY" : "REQUIRES_INVESTIGATION",
+      evidence: [], // filled from real complaints by the caller (rulesEvidence)
     },
-    alternative_causes: template.alternatives.map((description) => ({ description, likelihood: "POSSIBLE" as const })),
+    alternative_causes: template.alternatives.map((description) => ({
+      description,
+      likelihood: "POSSIBLE" as const,
+      evidence_refs: [],
+    })),
+    counter_evidence: [],
     affected_systems: template.systems.filter(
       (s) => evidence.known_systems.length === 0 || evidence.known_systems.some((k) => k.name === s),
     ),

@@ -1,3 +1,4 @@
+import type { EvidenceLink } from "@/lib/ai/evidence";
 import type { Channel, InteractionStatus, IssueStatus, RiskLevel, Severity, TrendStatus } from "@/lib/constants";
 import type { RiskFactor } from "@/lib/scoring/risk";
 
@@ -113,6 +114,7 @@ export interface IssueAnalysis {
   ownership_reason: string | null;
   recommended_action: string;
   validation_notes: string[];
+  evidence: EvidenceLink[];
   created_at: Date;
 }
 
