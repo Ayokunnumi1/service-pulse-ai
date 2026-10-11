@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyzeIssue, listSignificantIssues } from "@/lib/ai/analyze-issue";
-import { mapWithConcurrency } from "@/lib/ai/claude";
+import { mapWithConcurrency } from "@/lib/ai/llm";
 import { withBank } from "@/lib/api";
 
 export const maxDuration = 60;

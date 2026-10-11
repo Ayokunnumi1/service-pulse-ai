@@ -40,7 +40,7 @@ export function RunEvaluationButton({ aiEnabled, hasRun }: { aiEnabled: boolean;
     <Button
       onClick={run}
       disabled={running || !aiEnabled}
-      title={aiEnabled ? undefined : "Set ANTHROPIC_API_KEY first"}
+      title={aiEnabled ? undefined : "Set ANTHROPIC_API_KEY or GEMINI_API_KEY first"}
     >
       {running ? <Loader2 className="animate-spin" /> : <FlaskConical />}
       {running ? "Evaluating…" : hasRun ? "Re-run AI evaluation" : "Run AI evaluation"}

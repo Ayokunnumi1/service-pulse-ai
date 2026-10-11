@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { requireBank } from "@/lib/bank-context";
 import { humanize, TREND_LABELS } from "@/lib/constants";
 import { listAudit } from "@/lib/db/audit";
-import { aiConfigured, env } from "@/lib/env";
+import { modelFor } from "@/lib/ai/llm";
+import { aiConfigured, aiProvider, env } from "@/lib/env";
 import { RISK_LEVEL_THRESHOLDS, RISK_WEIGHTS } from "@/lib/scoring/risk";
 import { NEW_ISSUE_MIN_VOLUME, TREND_THRESHOLDS } from "@/lib/scoring/trend";
 import { formatConfidence, formatDateTime } from "@/lib/utils/format";
@@ -29,7 +30,8 @@ export default async function SettingsPage() {
   const bank = await requireBank();
   const audit = await listAudit(bank.id, { limit: 150 });
   const ai = aiConfigured();
-  const { ANTHROPIC_MODEL_FAST, ANTHROPIC_MODEL_DEEP, ANALYSIS_PERIOD_DAYS, AI_TIMEOUT_MS } = env();
+  const provider = aiProvider();
+  const { ANALYSIS_PERIOD_DAYS, AI_TIMEOUT_MS } = env();
 
   return (
     <>
@@ -86,16 +88,21 @@ export default async function SettingsPage() {
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Provider</dt>
                 <dd className="flex items-center gap-2">
-                  {ai ? "Anthropic Claude" : "Not configured"} <MethodBadge method={ai ? "AI" : "RULES"} />
+                  {provider === "anthropic"
+                    ? "Anthropic Claude"
+                    : provider === "gemini"
+                      ? "Google Gemini"
+                      : "Not configured"}{" "}
+                  <MethodBadge method={ai ? "AI" : "RULES"} />
                 </dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Classification model</dt>
-                <dd className="font-mono text-xs">{ai ? ANTHROPIC_MODEL_FAST : "—"}</dd>
+                <dd className="font-mono text-xs">{ai ? modelFor("fast") : "—"}</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Analysis &amp; assistant model</dt>
-                <dd className="font-mono text-xs">{ai ? ANTHROPIC_MODEL_DEEP : "—"}</dd>
+                <dd className="font-mono text-xs">{ai ? modelFor("deep") : "—"}</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-muted-foreground">Timeout</dt>
@@ -108,8 +115,9 @@ export default async function SettingsPage() {
             </dl>
             {!ai && (
               <p className="bg-muted/60 text-muted-foreground mt-3 rounded-lg p-2.5 text-xs">
-                Set <code>ANTHROPIC_API_KEY</code> to enable AI classification, root-cause analysis, team recommendation
-                and Ask ServicePulse. Until then a deterministic rules engine is used and labelled &ldquo;Rules&rdquo;.
+                Set <code>ANTHROPIC_API_KEY</code> (or a free <code>GEMINI_API_KEY</code>) to enable AI classification,
+                root-cause analysis, team recommendation and Ask ServicePulse. Until then a deterministic rules engine
+                is used and labelled &ldquo;Rules&rdquo;.
               </p>
             )}
           </CardContent>

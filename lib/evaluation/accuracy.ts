@@ -2,7 +2,7 @@ import "server-only";
 import { CHALLENGE_SET, type ChallengeItem } from "@/data/evaluation/challenge-set";
 import { groundTruthFor, truthKey } from "@/data/seed/ground-truth";
 import { BATCH_SIZE, classifyBatch, type PendingInteraction } from "@/lib/ai/classify";
-import { AIUnavailableError, mapWithConcurrency, modelFor } from "@/lib/ai/claude";
+import { AIUnavailableError, mapWithConcurrency, modelFor } from "@/lib/ai/llm";
 import { classifyWithRules } from "@/lib/ai/rules/classifier";
 import type { Channel } from "@/lib/constants";
 import { sql } from "@/lib/db/client";

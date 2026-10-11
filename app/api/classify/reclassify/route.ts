@@ -11,7 +11,7 @@ import { ReclassifyRequestSchema } from "@/lib/validation/api";
  */
 export const POST = withBank(async (req, bank) => {
   const { scope } = await parseBody(req, ReclassifyRequestSchema);
-  if (!aiConfigured()) throw new ApiError(400, "AI is not configured — set ANTHROPIC_API_KEY to re-classify with AI");
+  if (!aiConfigured()) throw new ApiError(400, "AI is not configured — set ANTHROPIC_API_KEY or GEMINI_API_KEY to re-classify with AI");
   const queued = await queueReclassification(bank.id, scope, "Demo User");
   return NextResponse.json({ queued });
 });

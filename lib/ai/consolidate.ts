@@ -12,7 +12,7 @@ import {
   type ConsolidationGroup,
 } from "@/prompts/issue-consolidation";
 import type { Bank } from "@/types";
-import { AIUnavailableError, structuredCompletion } from "./claude";
+import { AIUnavailableError, structuredCompletion } from "./llm";
 
 /**
  * Issue-group consolidation. The classifier may invent a new issue group when

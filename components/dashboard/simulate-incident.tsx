@@ -55,7 +55,18 @@ const COUNT = 28;
  * incident → classify & normalise → trend/risk detection → root cause and
  * responsible-team recommendation → open the investigation page.
  */
-export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnabled: boolean; simulatedCount: number }) {
+export function SimulateIncidentDialog({
+  aiEnabled,
+  simulatedCount,
+  classifier,
+  analyst,
+}: {
+  aiEnabled: boolean;
+  simulatedCount: number;
+  /** Display names of the fast/deep models, e.g. "Claude Haiku" — "rules engine" without AI. */
+  classifier: string;
+  analyst: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scenario, setScenario] = useState<IncidentScenarioKey>(INCIDENT_SCENARIOS[0].key);
@@ -135,8 +146,6 @@ export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnable
     }
   }
 
-  const classifier = aiEnabled ? "Claude Haiku" : "rules engine";
-  const analyst = aiEnabled ? "Claude Opus" : "rules engine";
   const steps: { label: string; state: "todo" | "active" | "done" }[] = [
     {
       label: `Inject ${COUNT} complaints from different channels and phrasings`,
@@ -149,7 +158,7 @@ export function SimulateIncidentDialog({ aiEnabled, simulatedCount }: { aiEnable
     ...(aiEnabled
       ? [
           {
-            label: "Merge near-duplicate issue groups into one problem (Claude Opus)",
+            label: `Merge near-duplicate issue groups into one problem (${analyst})`,
             state:
               phase === "consolidating"
                 ? ("active" as const)

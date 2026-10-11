@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireBank } from "@/lib/bank-context";
 import { CHANNEL_LABELS, issueTitle } from "@/lib/constants";
-import { aiConfigured } from "@/lib/env";
+import { aiConfigured, aiProviderName } from "@/lib/env";
 import { getChallengeReport, getSeedReport, type ItemResult, type Score } from "@/lib/evaluation/accuracy";
 import { formatDateTime, formatNumber } from "@/lib/utils/format";
 
@@ -34,6 +34,7 @@ function AccuracyBar({ correct, n, tone }: { correct: number; n: number; tone: "
 }
 
 function Example({ item, kind }: { item: ItemResult; kind: "win" | "miss" }) {
+  const aiName = aiProviderName();
   return (
     <li className="space-y-1.5 rounded-lg border p-3 text-sm">
       <div className="text-muted-foreground text-xs">{CHANNEL_LABELS[item.channel]}</div>
@@ -48,12 +49,12 @@ function Example({ item, kind }: { item: ItemResult; kind: "win" | "miss" }) {
               <XCircle className="size-3.5" /> Rules: {issueTitle(item.rules)}
             </span>
             <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="size-3.5" /> Claude: {issueTitle(item.ai ?? "")}
+              <CheckCircle2 className="size-3.5" /> {aiName}: {issueTitle(item.ai ?? "")}
             </span>
           </>
         ) : (
           <span className="flex items-center gap-1 text-[var(--status-critical)]">
-            <XCircle className="size-3.5" /> Claude: {issueTitle(item.ai ?? "")}
+            <XCircle className="size-3.5" /> {aiName}: {issueTitle(item.ai ?? "")}
             {item.aiConfidence !== null && ` (${Math.round(item.aiConfidence * 100)}% confident)`}
           </span>
         )}
@@ -65,6 +66,7 @@ function Example({ item, kind }: { item: ItemResult; kind: "win" | "miss" }) {
 export default async function EvaluationPage() {
   const bank = await requireBank();
   const ai = aiConfigured();
+  const aiName = aiProviderName();
   const [challenge, seed] = await Promise.all([getChallengeReport(bank.id), getSeedReport(bank)]);
   const hasRun = challenge.ai.n > 0;
   const lift =
@@ -79,13 +81,13 @@ export default async function EvaluationPage() {
       <PageHeader
         eyebrow={bank.name}
         title="AI evaluation"
-        description="How accurately does ServicePulse normalise differently-worded complaints into the right issue group? Measured against labelled ground truth — Claude versus the deterministic keyword-rules fallback."
+        description={`How accurately does ServicePulse normalise differently-worded complaints into the right issue group? Measured against labelled ground truth — ${aiName} versus the deterministic keyword-rules fallback.`}
         actions={<RunEvaluationButton aiEnabled={ai} hasRun={hasRun} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Claude accuracy (held-out)"
+          label={`${aiName} accuracy (held-out)`}
           value={pct(challenge.ai)}
           sub={
             hasRun
@@ -131,7 +133,7 @@ export default async function EvaluationPage() {
                 <TableHead>Expected issue group</TableHead>
                 <TableHead className="text-right">Messages</TableHead>
                 <TableHead>Keyword rules</TableHead>
-                <TableHead>Claude</TableHead>
+                <TableHead>{aiName}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -156,9 +158,11 @@ export default async function EvaluationPage() {
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Where Claude beats keyword rules ({wins.length})</CardTitle>
+              <CardTitle>
+                Where {aiName} beats keyword rules ({wins.length})
+              </CardTitle>
               <CardDescription>
-                Same message, same moment: the rules engine misread it, Claude normalised it.
+                Same message, same moment: the rules engine misread it, {aiName} normalised it.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -175,7 +179,9 @@ export default async function EvaluationPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Where Claude got it wrong ({misses.length})</CardTitle>
+              <CardTitle>
+                Where {aiName} got it wrong ({misses.length})
+              </CardTitle>
               <CardDescription>
                 Shown for transparency. Every classification is still validated, audited and can be reviewed.
               </CardDescription>
@@ -197,8 +203,8 @@ export default async function EvaluationPage() {
         <div className="mt-6">
           <EmptyState icon={<FlaskConical className="size-8" />} title="The AI has not been evaluated yet">
             {ai
-              ? "Run the evaluation to classify the held-out messages with Claude and compare against keyword rules."
-              : "Set ANTHROPIC_API_KEY to evaluate Claude. Keyword-rules accuracy above is calculated live."}
+              ? `Run the evaluation to classify the held-out messages with ${aiName} and compare against keyword rules.`
+              : "Set ANTHROPIC_API_KEY or GEMINI_API_KEY to evaluate the AI. Keyword-rules accuracy above is calculated live."}
           </EmptyState>
         </div>
       )}
@@ -217,7 +223,7 @@ export default async function EvaluationPage() {
           <CardContent className="space-y-4">
             <dl className="grid gap-3 text-sm sm:grid-cols-3">
               <div>
-                <dt className="text-muted-foreground">Claude (stored classifications)</dt>
+                <dt className="text-muted-foreground">{aiName} (stored classifications)</dt>
                 <dd className="text-xl font-semibold">{pct(seed.ai)}</dd>
                 <dd className="text-muted-foreground text-xs">
                   {seed.ai.n > 0
@@ -249,7 +255,7 @@ export default async function EvaluationPage() {
                   {seed.aiMisses.map((m, idx) => (
                     <li key={idx} className="text-muted-foreground">
                       &ldquo;{m.message}&rdquo; — expected{" "}
-                      <span className="text-foreground">{issueTitle(m.expected)}</span>, Claude said{" "}
+                      <span className="text-foreground">{issueTitle(m.expected)}</span>, {aiName} said{" "}
                       <span className="text-foreground">{issueTitle(m.got)}</span>
                     </li>
                   ))}

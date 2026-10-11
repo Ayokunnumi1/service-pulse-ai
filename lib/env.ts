@@ -18,6 +18,13 @@ const EnvSchema = z.object({
   // Fast tier: bulk complaint classification. Deep tier: root cause, team routing, Ask ServicePulse.
   ANTHROPIC_MODEL_FAST: z.string().default("claude-haiku-5-5"),
   ANTHROPIC_MODEL_DEEP: z.string().default("claude-opus-5-5"),
+  // Alternative provider, used only when ANTHROPIC_API_KEY is not set (free tier via Google AI Studio).
+  GEMINI_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined)),
+  GEMINI_MODEL_FAST: z.string().default("gemini-flash-lite-latest"),
+  GEMINI_MODEL_DEEP: z.string().default("gemini-flash-latest"),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(25_000),
   ANALYSIS_PERIOD_DAYS: z.coerce.number().int().min(1).max(90).default(7),
 });
@@ -37,6 +44,30 @@ export function env(): Env {
   return cached;
 }
 
+export type AIProvider = "anthropic" | "gemini";
+
+/** The active AI provider: Claude when its key is set, otherwise Gemini, otherwise none (rules fallback). */
+export function aiProvider(): AIProvider | null {
+  const { ANTHROPIC_API_KEY, GEMINI_API_KEY } = env();
+  if (ANTHROPIC_API_KEY) return "anthropic";
+  if (GEMINI_API_KEY) return "gemini";
+  return null;
+}
+
 export function aiConfigured(): boolean {
-  return Boolean(env().ANTHROPIC_API_KEY);
+  return aiProvider() !== null;
+}
+
+/** Display name of the model behind a tier, e.g. "Claude Haiku" or "Gemini Flash-Lite". */
+export function aiTierLabel(tier: "fast" | "deep"): string {
+  const provider = aiProvider();
+  if (provider === "anthropic") return tier === "fast" ? "Claude Haiku" : "Claude Opus";
+  if (provider === "gemini") return tier === "fast" ? "Gemini Flash-Lite" : "Gemini Flash";
+  return "rules engine";
+}
+
+/** Short display name for the active provider, e.g. "Claude" — "AI" when none is configured. */
+export function aiProviderName(): string {
+  const provider = aiProvider();
+  return provider === "anthropic" ? "Claude" : provider === "gemini" ? "Gemini" : "AI";
 }

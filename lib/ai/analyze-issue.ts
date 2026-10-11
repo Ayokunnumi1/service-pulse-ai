@@ -17,7 +17,7 @@ import {
 import { ROOT_CAUSE_SYSTEM_PROMPT, rootCauseUserPrompt, type IssueEvidence } from "@/prompts/root-cause-analysis";
 import { TEAM_RECOMMENDATION_SYSTEM_PROMPT, teamRecommendationUserPrompt } from "@/prompts/team-recommendation";
 import type { Bank } from "@/types";
-import { AIUnavailableError, structuredCompletion } from "./claude";
+import { AIUnavailableError, structuredCompletion } from "./llm";
 import { recommendedActionFor, rootCauseWithRules } from "./rules/root-cause";
 import { evidenceRef, resolveEvidence, rulesEvidence, type EvidenceLink } from "./evidence";
 import { humanOwnerFor, listRoutingDecisions, selectPrecedents } from "./feedback";

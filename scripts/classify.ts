@@ -23,7 +23,7 @@ async function main() {
       ? "ALL"
       : "RULES"
     : null;
-  if (reclassify && !aiConfigured()) throw new Error("--reclassify needs ANTHROPIC_API_KEY (AI is not configured)");
+  if (reclassify && !aiConfigured()) throw new Error("--reclassify needs ANTHROPIC_API_KEY or GEMINI_API_KEY (AI is not configured)");
 
   const banks = await sql<Bank[]>`
     select id, slug, name, description, logo_url, currency, status, created_at from banks

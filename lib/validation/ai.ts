@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CATEGORIES, CHANNELS, INTENTS, PRODUCTS, SENTIMENTS, SEVERITIES } from "@/lib/constants";
 
 /**
- * Structured-output schemas sent to the model (Claude structured outputs).
+ * Structured-output schemas sent to the model (Claude / Gemini structured outputs).
  * Every field is required, so optional values are modelled as `.nullable()`. Range checks that strict JSON schema cannot
  * express are enforced afterwards by the `Validated*` schemas below.
  */
@@ -153,6 +153,23 @@ export const AIConsolidationSchema = z.object({
   ),
 });
 export type ConsolidationDecision = z.infer<typeof AIConsolidationSchema>["decisions"][number];
+
+// ---------------------------------------------------------------------------
+// Today's briefing
+// ---------------------------------------------------------------------------
+export const AIBriefingSchema = z.object({
+  headline: z.string().describe("One sentence: the single most important thing right now."),
+  points: z.array(
+    z.object({
+      title: z.string().describe("Short title, max ~8 words."),
+      detail: z.string().describe("1–2 sentences quoting only figures from the snapshot."),
+      issue_codes: z.array(z.string()).describe("issue_code values from the snapshot this point is about."),
+    }),
+  ),
+  recommended_focus: z.string().describe("Concrete actions for today, naming teams."),
+  data_limitations: z.string().nullable(),
+});
+export type Briefing = z.infer<typeof AIBriefingSchema>;
 
 // ---------------------------------------------------------------------------
 // Ask ServicePulse (management assistant)

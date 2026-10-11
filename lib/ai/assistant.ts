@@ -7,7 +7,7 @@ import { aiConfigured } from "@/lib/env";
 import { AIAssistantAnswerSchema, type AssistantAnswer } from "@/lib/validation/ai";
 import { MANAGEMENT_ASSISTANT_SYSTEM_PROMPT, managementAssistantUserPrompt } from "@/prompts/management-insight";
 import type { Bank } from "@/types";
-import { AIUnavailableError, structuredCompletion } from "./claude";
+import { AIUnavailableError, structuredCompletion } from "./llm";
 
 export interface AssistantResponse extends AssistantAnswer {
   method: "AI" | "RULES";

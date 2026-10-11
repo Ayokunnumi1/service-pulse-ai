@@ -39,13 +39,13 @@ investigate and fix it, and only ever from teams that exist in that bank's respo
 
 One Next.js 16 (App Router, TypeScript) application. No microservices, queues or ML infrastructure.
 
-| Layer                 | Technology                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------ |
-| UI                    | Next.js server components, Tailwind CSS v4, shadcn/ui, Recharts, Lucide icons                    |
-| API                   | Next.js route handlers (`app/api/**`), every body validated with Zod                             |
-| Database              | Supabase PostgreSQL via `postgres.js` (parameterised tagged-template queries only)               |
+| Layer                 | Technology                                                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| UI                    | Next.js server components, Tailwind CSS v4, shadcn/ui, Recharts, Lucide icons                                                             |
+| API                   | Next.js route handlers (`app/api/**`), every body validated with Zod                                                                      |
+| Database              | Supabase PostgreSQL via `postgres.js` (parameterised tagged-template queries only)                                                        |
 | AI                    | Anthropic Claude with **Structured Outputs** (`betaZodOutputFormat`), re-validated with Zod — Haiku for classification, Opus for analysis |
-| Deterministic engines | `lib/scoring` (trend + risk), `lib/clustering` (aggregation), `lib/ai/team-validation`           |
+| Deterministic engines | `lib/scoring` (trend + risk), `lib/clustering` (aggregation), `lib/ai/team-validation`                                                    |
 
 ```
 app/
@@ -104,16 +104,19 @@ cp .env.example .env.local      # then edit values
 
 All variables are **server-side only** (none are prefixed `NEXT_PUBLIC_`), validated with Zod in `lib/env.ts`.
 
-| Variable               | Required | Default        | Purpose                                                                         |
-| ---------------------- | -------- | -------------- | ------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | yes      | –              | Postgres connection string (Supabase or local)                                  |
-| `DATABASE_SSL`         | no       | `false`        | `true` for Supabase / hosted Postgres                                           |
-| `DATABASE_POOL_MAX`    | no       | 5 prod / 8 dev | Pool size. Use `1` with the local PGlite server                                 |
-| `ANTHROPIC_API_KEY`    | no*      | –              | Enables AI. *Without it a deterministic rules engine is used (labelled "Rules") |
-| `ANTHROPIC_MODEL_FAST` | no       | `claude-haiku-5-5` | Bulk complaint classification                                               |
-| `ANTHROPIC_MODEL_DEEP` | no       | `claude-opus-5-5`  | Root-cause analysis, team recommendation, Ask ServicePulse                  |
-| `AI_TIMEOUT_MS`        | no       | `25000`        | Per-request AI timeout (1 automatic retry)                                      |
-| `ANALYSIS_PERIOD_DAYS` | no       | `7`            | Length of the current vs previous comparison period                             |
+| Variable               | Required | Default                    | Purpose                                                                          |
+| ---------------------- | -------- | -------------------------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`         | yes      | –                          | Postgres connection string (Supabase or local)                                   |
+| `DATABASE_SSL`         | no       | `false`                    | `true` for Supabase / hosted Postgres                                            |
+| `DATABASE_POOL_MAX`    | no       | 5 prod / 8 dev             | Pool size. Use `1` with the local PGlite server                                  |
+| `ANTHROPIC_API_KEY`    | no*      | –                          | Enables AI. *Without it a deterministic rules engine is used (labelled "Rules")  |
+| `ANTHROPIC_MODEL_FAST` | no       | `claude-haiku-5-5`         | Bulk complaint classification                                                    |
+| `ANTHROPIC_MODEL_DEEP` | no       | `claude-opus-5-5`          | Root-cause analysis, team recommendation, Ask ServicePulse                       |
+| `GEMINI_API_KEY`       | no       | –                          | Free alternative (Google AI Studio). Used only when `ANTHROPIC_API_KEY` is empty |
+| `GEMINI_MODEL_FAST`    | no       | `gemini-flash-lite-latest` | Bulk classification when Gemini is the provider                                  |
+| `GEMINI_MODEL_DEEP`    | no       | `gemini-flash-latest`      | Analysis and assistant when Gemini is the provider                               |
+| `AI_TIMEOUT_MS`        | no       | `25000`                    | Per-request AI timeout (1 automatic retry)                                       |
+| `ANALYSIS_PERIOD_DAYS` | no       | `7`                        | Length of the current vs previous comparison period                              |
 
 ## Database migrations
 

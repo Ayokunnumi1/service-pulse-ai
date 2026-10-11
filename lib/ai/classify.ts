@@ -15,7 +15,7 @@ import {
   classificationUserPrompt,
   type ClassificationPromptItem,
 } from "@/prompts/complaint-classification";
-import { AIUnavailableError, mapWithConcurrency, structuredCompletion } from "./claude";
+import { AIUnavailableError, mapWithConcurrency, structuredCompletion } from "./llm";
 import { classifyWithRules } from "./rules/classifier";
 
 export const BATCH_SIZE = 20;

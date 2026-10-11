@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BarList } from "@/components/charts/bar-list";
 import { TrendChart } from "@/components/charts/trend-chart";
+import { BriefingCard } from "@/components/dashboard/briefing-card";
 import { EarlyWarningList } from "@/components/dashboard/early-warning-list";
 import { SimulateIncidentDialog } from "@/components/dashboard/simulate-incident";
 import { PageHeader } from "@/components/shared/page-header";
@@ -12,8 +13,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireBank } from "@/lib/bank-context";
 import { issueColor, OTHER_COLOR } from "@/lib/chart-colors";
 import { getIssuesByOwner, getKpis, getTopBreakdowns, getTrendSeries } from "@/lib/db/dashboard";
+import { getLatestBriefing } from "@/lib/ai/briefing";
 import { listIssues } from "@/lib/db/issues";
-import { aiConfigured } from "@/lib/env";
+import { aiConfigured, aiTierLabel } from "@/lib/env";
 import { countSimulatedInteractions } from "@/lib/simulation/incident";
 import { SIGNIFICANT_TRENDS } from "@/lib/scoring/trend";
 import { formatDate, formatGrowth, formatNumber } from "@/lib/utils/format";
@@ -31,6 +33,7 @@ export default async function DashboardPage() {
     listIssues(bank.id, { view: "active" }),
     countSimulatedInteractions(bank.id),
   ]);
+  const briefing = kpis.classified > 0 ? await getLatestBriefing(bank.id) : null;
 
   const significant = issues.filter(
     (i) => SIGNIFICANT_TRENDS.includes(i.trend_status) || i.risk_level === "CRITICAL" || i.risk_level === "HIGH",
@@ -62,7 +65,14 @@ export default async function DashboardPage() {
         }
         actions={
           <>
-            {kpis.classified > 0 && <SimulateIncidentDialog aiEnabled={aiConfigured()} simulatedCount={simulated} />}
+            {kpis.classified > 0 && (
+              <SimulateIncidentDialog
+                aiEnabled={aiConfigured()}
+                simulatedCount={simulated}
+                classifier={aiTierLabel("fast")}
+                analyst={aiTierLabel("deep")}
+              />
+            )}
             {kpis.pending > 0 && kpis.classified > 0 && <ClassifyButton pending={kpis.pending} />}
             {unanalysed > 0 && <AnalyzeSignificantButton variant={kpis.pending > 0 ? "outline" : "default"} />}
           </>
@@ -83,6 +93,8 @@ export default async function DashboardPage() {
           <ClassifyButton pending={kpis.pending} />
         </div>
       )}
+
+      {kpis.classified > 0 && <BriefingCard view={briefing} bankName={bank.name} />}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         <StatCard

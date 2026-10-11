@@ -4,7 +4,7 @@ import { MobileNav, Sidebar } from "@/components/layout/sidebar";
 import { requireBank } from "@/lib/bank-context";
 import { sql } from "@/lib/db/client";
 import { listBanks } from "@/lib/db/banks";
-import { aiConfigured } from "@/lib/env";
+import { aiConfigured, aiProviderName } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
       where bank_id = ${bank.id} and status <> 'RESOLVED' and risk_level = 'CRITICAL'`,
   ]);
   const ai = aiConfigured();
+  const aiName = aiProviderName();
 
   return (
     <div className="flex min-h-screen">
@@ -26,9 +27,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           <BankSwitcher banks={banks.map((b) => ({ id: b.id, name: b.name }))} currentId={bank.id} />
           <div
             className="bg-card ring-foreground/10 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ring-1"
-            title={
-              ai ? "Claude structured outputs enabled" : "ANTHROPIC_API_KEY not set — deterministic rules fallback in use"
-            }
+            title={ai ? `${aiName} structured outputs enabled` : "No AI key set — deterministic rules fallback in use"}
           >
             {ai ? (
               <Sparkles className="size-3.5 text-[var(--series-1)]" />
@@ -36,7 +35,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
               <Cpu className="text-muted-foreground size-3.5" />
             )}
             <span className="text-muted-foreground">AI engine:</span>
-            <span className="font-medium">{ai ? "Claude connected" : "Rules fallback"}</span>
+            <span className="font-medium">{ai ? `${aiName} connected` : "Rules fallback"}</span>
           </div>
         </header>
         <MobileNav />
